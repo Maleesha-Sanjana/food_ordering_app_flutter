@@ -22,6 +22,9 @@ class CatalogProvider extends ChangeNotifier {
     try {
       // Use mock API client for testing
       _items = await mockApiClient.getFoodItems();
+    } catch (e) {
+      print('CatalogProvider: Error fetching items: $e');
+      _items = [];
     } finally {
       _loading = false;
       notifyListeners();

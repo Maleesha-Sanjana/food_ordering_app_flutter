@@ -291,6 +291,11 @@ class _AdminDashboardState extends State<AdminDashboard>
                   'Manage Users',
                   Icons.people,
                   theme.colorScheme.primary,
+                  () {
+                    setState(() {
+                      _selectedTab = 'Accounts';
+                    });
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -298,9 +303,52 @@ class _AdminDashboardState extends State<AdminDashboard>
                 child: _buildActionCard(
                   context,
                   theme,
-                  'View Reports',
-                  Icons.assessment,
+                  'View Order Details',
+                  Icons.list_alt,
                   theme.colorScheme.secondary,
+                  () {
+                    setState(() {
+                      _selectedTab = 'Orders';
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  context,
+                  theme,
+                  'Manage Accounts',
+                  Icons.admin_panel_settings,
+                  theme.colorScheme.tertiary,
+                  () {
+                    setState(() {
+                      _selectedTab = 'Accounts';
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionCard(
+                  context,
+                  theme,
+                  'System Settings',
+                  Icons.settings,
+                  theme.colorScheme.error,
+                  () {
+                    // TODO: Implement system settings
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('System settings coming soon!'),
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -315,42 +363,70 @@ class _AdminDashboardState extends State<AdminDashboard>
     ThemeData theme,
     OrdersProvider orders,
   ) {
-    return orders.orders.isEmpty
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.inbox_outlined,
-                  size: 64,
-                  color: theme.colorScheme.onSurface.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No orders found',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Orders will appear here when customers place them',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+    if (orders.orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: orders.orders.length,
-            itemBuilder: (context, i) {
-              final order = orders.orders[i];
-              return _buildOrderCard(context, order, theme);
-            },
-          );
+            const SizedBox(height: 16),
+            Text(
+              'No orders found',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Orders will appear here when customers place them',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Group orders by seller
+    final Map<int, List<OrderModel>> ordersBySeller = {};
+    for (final order in orders.orders) {
+      ordersBySeller.putIfAbsent(order.sellerId, () => []).add(order);
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      itemCount: ordersBySeller.length,
+      itemBuilder: (context, index) {
+        final sellerId = ordersBySeller.keys.elementAt(index);
+        final sellerOrders = ordersBySeller[sellerId]!;
+        final totalRevenue = sellerOrders.fold(
+          0.0,
+          (sum, order) => sum + order.grandTotal,
+        );
+        final pendingCount = sellerOrders
+            .where((o) => o.orderStatus == 'Pending')
+            .length;
+        final completedCount = sellerOrders
+            .where((o) => o.orderStatus == 'Completed')
+            .length;
+
+        return _buildSellerOrderGroup(
+          context,
+          theme,
+          sellerId,
+          sellerOrders,
+          totalRevenue,
+          pendingCount,
+          completedCount,
+        );
+      },
+    );
   }
 
   Widget _buildAccountsTab(BuildContext context, ThemeData theme) {
@@ -359,118 +435,437 @@ class _AdminDashboardState extends State<AdminDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Management Section
+          // Account Management Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primary.withOpacity(0.1),
+                  theme.colorScheme.secondary.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings,
+                      size: 32,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Account Management',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Manage users, roles, and permissions across the platform',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Role Statistics Section
+          Text(
+            'User Statistics',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+
           Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'User Management',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: _buildRoleCard(
+                          context,
+                          theme,
+                          'Total Customers',
+                          '45',
+                          Icons.person,
+                          theme.colorScheme.primary,
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showCreateUserDialog(context, theme),
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Create User'),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildRoleCard(
+                          context,
+                          theme,
+                          'Active Sellers',
+                          '8',
+                          Icons.store,
+                          theme.colorScheme.secondary,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildRoleCard(
+                          context,
+                          theme,
+                          'System Admins',
+                          '2',
+                          Icons.admin_panel_settings,
+                          theme.colorScheme.error,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildRoleCard(
+                          context,
+                          theme,
+                          'Pending Approval',
+                          '3',
+                          Icons.pending,
+                          theme.colorScheme.tertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // User Management Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'User Management',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showCreateUserDialog(context, theme),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Create User'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Users List
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  // Table Header
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'User',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            'Role',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 90,
+                          child: Text(
+                            'Status',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: Text(
+                            'Actions',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
 
                   // Sample users for demo
                   ...List.generate(5, (index) {
                     final roles = ['customer', 'seller', 'admin'];
                     final role = roles[index % 3];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: role == 'admin'
-                              ? theme.colorScheme.error
-                              : role == 'seller'
-                              ? theme.colorScheme.secondary
-                              : theme.colorScheme.primary,
-                          child: Icon(
-                            role == 'admin'
-                                ? Icons.admin_panel_settings
-                                : role == 'seller'
-                                ? Icons.store
-                                : Icons.person,
-                            color: theme.colorScheme.onPrimary,
-                          ),
+                    final isActive = index % 4 != 3; // One inactive user
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withOpacity(0.2),
                         ),
-                        title: Text('User ${index + 1}'),
-                        subtitle: Text('user${index + 1}@foodhub.com'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Chip(
-                              label: Text(role.toUpperCase()),
-                              backgroundColor: role == 'admin'
-                                  ? theme.colorScheme.errorContainer
-                                  : role == 'seller'
-                                  ? theme.colorScheme.secondaryContainer
-                                  : theme.colorScheme.primaryContainer,
-                              labelStyle: TextStyle(
-                                color: role == 'admin'
-                                    ? theme.colorScheme.onErrorContainer
-                                    : role == 'seller'
-                                    ? theme.colorScheme.onSecondaryContainer
-                                    : theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            PopupMenuButton<String>(
-                              onSelected: (value) => _handleUserAction(
-                                context,
-                                theme,
-                                index,
-                                value,
-                              ),
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit),
-                                      SizedBox(width: 8),
-                                      Text('Edit Role'),
-                                    ],
+                      ),
+                      child: Row(
+                        children: [
+                          // User Info
+                          Expanded(
+                            flex: 3,
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: role == 'admin'
+                                      ? theme.colorScheme.error
+                                      : role == 'seller'
+                                      ? theme.colorScheme.secondary
+                                      : theme.colorScheme.primary,
+                                  child: Icon(
+                                    role == 'admin'
+                                        ? Icons.admin_panel_settings
+                                        : role == 'seller'
+                                        ? Icons.store
+                                        : Icons.person,
+                                    color: theme.colorScheme.onPrimary,
+                                    size: 18,
                                   ),
                                 ),
-                                const PopupMenuItem(
-                                  value: 'suspend',
-                                  child: Row(
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.block),
-                                      SizedBox(width: 8),
-                                      Text('Suspend'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete),
-                                      SizedBox(width: 8),
-                                      Text('Delete'),
+                                      Text(
+                                        'User ${index + 1}',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        'user${index + 1}@foodhub.com',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ],
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+
+                          // Role
+                          SizedBox(
+                            width: 80,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: role == 'admin'
+                                      ? theme.colorScheme.errorContainer
+                                      : role == 'seller'
+                                      ? theme.colorScheme.secondaryContainer
+                                      : theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  role.toUpperCase(),
+                                  style: TextStyle(
+                                    color: role == 'admin'
+                                        ? theme.colorScheme.onErrorContainer
+                                        : role == 'seller'
+                                        ? theme.colorScheme.onSecondaryContainer
+                                        : theme.colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Status
+                          SizedBox(
+                            width: 90,
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? theme.colorScheme.primaryContainer
+                                      : theme.colorScheme.errorContainer,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isActive
+                                          ? Icons.check_circle
+                                          : Icons.block,
+                                      size: 12,
+                                      color: isActive
+                                          ? theme.colorScheme.onPrimaryContainer
+                                          : theme.colorScheme.onErrorContainer,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Flexible(
+                                      child: Text(
+                                        isActive ? 'Active' : 'Suspended',
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? theme
+                                                    .colorScheme
+                                                    .onPrimaryContainer
+                                              : theme
+                                                    .colorScheme
+                                                    .onErrorContainer,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Actions
+                          SizedBox(
+                            width: 60,
+                            child: Center(
+                              child: PopupMenuButton<String>(
+                                onSelected: (value) => _handleUserAction(
+                                  context,
+                                  theme,
+                                  index,
+                                  value,
+                                ),
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                  size: 20,
+                                ),
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit),
+                                        SizedBox(width: 8),
+                                        Text('Edit Role'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'suspend',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.block),
+                                        const SizedBox(width: 8),
+                                        Text(isActive ? 'Suspend' : 'Activate'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete),
+                                        SizedBox(width: 8),
+                                        Text('Delete'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }),
@@ -479,64 +874,7 @@ class _AdminDashboardState extends State<AdminDashboard>
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // Role Management Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Role Management',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Role statistics
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Customers',
-                          '45',
-                          Icons.person,
-                          theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Sellers',
-                          '8',
-                          Icons.store,
-                          theme.colorScheme.secondary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Admins',
-                          '2',
-                          Icons.admin_panel_settings,
-                          theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -597,11 +935,12 @@ class _AdminDashboardState extends State<AdminDashboard>
     String title,
     IconData icon,
     Color color,
+    VoidCallback onPressed,
   ) {
     return Card(
       elevation: 2,
       child: InkWell(
-        onTap: () {},
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -623,13 +962,135 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
+  Widget _buildSellerOrderGroup(
+    BuildContext context,
+    ThemeData theme,
+    int sellerId,
+    List<OrderModel> sellerOrders,
+    double totalRevenue,
+    int pendingCount,
+    int completedCount,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Seller Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.secondary,
+                  child: Icon(
+                    Icons.store,
+                    color: theme.colorScheme.onSecondary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Seller #$sellerId',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${sellerOrders.length} orders • \$${totalRevenue.toStringAsFixed(2)} total',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Status indicators
+                Row(
+                  children: [
+                    if (pendingCount > 0) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$pendingCount Pending',
+                          style: TextStyle(
+                            color: theme.colorScheme.onTertiaryContainer,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    if (completedCount > 0) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$completedCount Completed',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Orders List
+          ...sellerOrders
+              .map(
+                (order) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: _buildOrderCard(context, order, theme),
+                ),
+              )
+              .toList(),
+
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOrderCard(
     BuildContext context,
     OrderModel order,
     ThemeData theme,
   ) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: order.orderStatus == 'Pending'
