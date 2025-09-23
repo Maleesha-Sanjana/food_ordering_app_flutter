@@ -1,0 +1,1 @@
+ /Users/maleeshasanjana/Desktop/food_ordering_app/.dart_tool/flutter_build/2f7133bc2b5587a33e17cc6d5389c8a5/native_assets.json: 

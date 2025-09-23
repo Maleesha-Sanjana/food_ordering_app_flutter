@@ -20,6 +20,33 @@ class ApiClient {
         .toList();
   }
 
+  Future<AuthResponse> login(String email, String password) async {
+    final res = await http.post(
+      _uri('/api/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    if (res.statusCode != 200) {
+      final error = jsonDecode(res.body);
+      throw Exception(error['message'] ?? 'Login failed');
+    }
+    return AuthResponse.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<AuthResponse> signup(AuthRequest request) async {
+    final res = await http.post(
+      _uri('/api/auth/signup'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      final error = jsonDecode(res.body);
+      throw Exception(error['message'] ?? 'Signup failed');
+    }
+    return AuthResponse.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  // Keep the old method for backward compatibility during development
   Future<AppUser> identifyUser(String email) async {
     final res = await http.post(
       _uri('/api/users/identify'),
