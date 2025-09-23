@@ -31,6 +31,12 @@ class _CustomerDashboardState extends State<CustomerDashboard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    // Initialize catalog to load food items
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CatalogProvider>().fetch();
+      }
+    });
   }
 
   @override
@@ -41,10 +47,9 @@ class _CustomerDashboardState extends State<CustomerDashboard>
   }
 
   List<dynamic> get filteredItems {
-    if (_searchQuery.isEmpty) return context.read<CatalogProvider>().items;
-    return context
-        .read<CatalogProvider>()
-        .items
+    final items = context.read<CatalogProvider>().items;
+    if (_searchQuery.isEmpty) return items;
+    final filtered = items
         .where(
           (item) =>
               item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -54,6 +59,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                   false),
         )
         .toList();
+    return filtered;
   }
 
   @override
@@ -130,49 +136,51 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () =>
-                                    _showCartModal(context, cart, theme),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Icon(
-                                        Icons.shopping_cart,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                      if (cart.lines.isNotEmpty)
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: BoxDecoration(
-                                              color: theme.colorScheme.error,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 16,
-                                              minHeight: 16,
-                                            ),
-                                            child: Text(
-                                              '${cart.lines.length}',
-                                              style: TextStyle(
-                                                color:
-                                                    theme.colorScheme.onError,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _showCartModal(context, cart, theme),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        Icon(
+                                          Icons.shopping_cart,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                        if (cart.lines.isNotEmpty)
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(2),
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme.error,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                              textAlign: TextAlign.center,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 16,
+                                                minHeight: 16,
+                                              ),
+                                              child: Text(
+                                                '${cart.lines.length}',
+                                                style: TextStyle(
+                                                  color:
+                                                      theme.colorScheme.onError,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -191,6 +199,10 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                                       .withOpacity(0.7),
                                 ),
                                 tooltip: 'Logout',
+                                constraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 40,
+                                ),
                               ),
                             ],
                           ),
@@ -427,6 +439,37 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 ),
               )
             else ...[
+              // Discount Information Banner
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.local_offer,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Automatic discounts: 5% off \$20+, 10% off \$30+, 15% off \$50+',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -458,25 +501,24 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                           children: [
                             IconButton(
                               onPressed: () {
-                                if (line.quantity > 1) {
-                                  line.quantity--;
-                                  // Cart will automatically notify listeners when modified
-                                } else {
-                                  cart.remove(line.item);
-                                }
+                                cart.decrementQuantity(line.item);
+                                _applySampleDiscounts(cart);
                               },
                               icon: const Icon(Icons.remove_circle_outline),
                             ),
                             Text('${line.quantity}'),
                             IconButton(
                               onPressed: () {
-                                line.quantity++;
-                                // Cart will automatically notify listeners when modified
+                                cart.incrementQuantity(line.item);
+                                _applySampleDiscounts(cart);
                               },
                               icon: const Icon(Icons.add_circle_outline),
                             ),
                             IconButton(
-                              onPressed: () => cart.remove(line.item),
+                              onPressed: () {
+                                cart.remove(line.item);
+                                _applySampleDiscounts(cart);
+                              },
                               icon: const Icon(Icons.delete_outline),
                               color: theme.colorScheme.error,
                             ),
@@ -488,24 +530,104 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 ),
               ),
               const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total: \$${cart.grandTotal.toStringAsFixed(2)}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+
+              // Order Summary
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    // Subtotal
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Subtotal:', style: theme.textTheme.bodyLarge),
+                        Text(
+                          '\$${cart.subtotal.toStringAsFixed(2)}',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Discount (if any)
+                    if (cart.discount > 0) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Discount:',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                          Text(
+                            '-\$${cart.discount.toStringAsFixed(2)}',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    const Divider(height: 16),
+
+                    // Grand Total
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Grand Total:',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '\$${cart.grandTotal.toStringAsFixed(2)}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Checkout Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Order placement logic is already in the bottom bar
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Order placement logic is already in the bottom bar
-                    },
-                    child: const Text('Checkout'),
+                  child: Text(
+                    'Proceed to Checkout',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ],
+                ),
               ),
             ],
           ],
@@ -524,7 +646,10 @@ class _CustomerDashboardState extends State<CustomerDashboard>
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(
-        onTap: () => cart.add(item),
+        onTap: () {
+          cart.add(item);
+          _applySampleDiscounts(cart);
+        },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -579,12 +704,36 @@ class _CustomerDashboardState extends State<CustomerDashboard>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '\$${item.retailPrice.toStringAsFixed(2)}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '\$${item.retailPrice.toStringAsFixed(2)}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // Discount badge
+                      if (item.retailPrice >= 15.0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Discount Available',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -608,5 +757,24 @@ class _CustomerDashboardState extends State<CustomerDashboard>
         ),
       ),
     );
+  }
+
+  void _applySampleDiscounts(CartProvider cart) {
+    // Apply sample discounts based on cart value
+    final subtotal = cart.subtotal;
+
+    if (subtotal >= 50.0) {
+      // 15% discount for orders over $50
+      cart.applyDiscount(subtotal * 0.15);
+    } else if (subtotal >= 30.0) {
+      // 10% discount for orders over $30
+      cart.applyDiscount(subtotal * 0.10);
+    } else if (subtotal >= 20.0) {
+      // 5% discount for orders over $20
+      cart.applyDiscount(subtotal * 0.05);
+    } else {
+      // No discount for smaller orders
+      cart.applyDiscount(0.0);
+    }
   }
 }

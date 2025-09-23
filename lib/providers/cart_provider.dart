@@ -22,7 +22,9 @@ class CartProvider extends ChangeNotifier {
   double get grandTotal => subtotal - discount;
 
   void add(FoodItem item, {String type = 'retail'}) {
-    final existing = _lines.where((l) => l.item.id == item.id && l.type == type).toList();
+    final existing = _lines
+        .where((l) => l.item.id == item.id && l.type == type)
+        .toList();
     if (existing.isNotEmpty) {
       existing.first.quantity += 1;
     } else {
@@ -34,6 +36,47 @@ class CartProvider extends ChangeNotifier {
   void remove(FoodItem item, {String type = 'retail'}) {
     _lines.removeWhere((l) => l.item.id == item.id && l.type == type);
     notifyListeners();
+  }
+
+  void updateQuantity(
+    FoodItem item,
+    int newQuantity, {
+    String type = 'retail',
+  }) {
+    final line = _lines.firstWhere(
+      (l) => l.item.id == item.id && l.type == type,
+      orElse: () => throw Exception('Item not found in cart'),
+    );
+
+    if (newQuantity <= 0) {
+      remove(item, type: type);
+    } else {
+      line.quantity = newQuantity;
+      notifyListeners();
+    }
+  }
+
+  void incrementQuantity(FoodItem item, {String type = 'retail'}) {
+    final line = _lines.firstWhere(
+      (l) => l.item.id == item.id && l.type == type,
+      orElse: () => throw Exception('Item not found in cart'),
+    );
+    line.quantity++;
+    notifyListeners();
+  }
+
+  void decrementQuantity(FoodItem item, {String type = 'retail'}) {
+    final line = _lines.firstWhere(
+      (l) => l.item.id == item.id && l.type == type,
+      orElse: () => throw Exception('Item not found in cart'),
+    );
+
+    if (line.quantity > 1) {
+      line.quantity--;
+      notifyListeners();
+    } else {
+      remove(item, type: type);
+    }
   }
 
   void clear() {
@@ -49,9 +92,13 @@ class CartProvider extends ChangeNotifier {
 
   List<OrderItem> toOrderItems() {
     return _lines
-        .map((l) => OrderItem(foodItemId: l.item.id, quantity: l.quantity, type: l.type))
+        .map(
+          (l) => OrderItem(
+            foodItemId: l.item.id,
+            quantity: l.quantity,
+            type: l.type,
+          ),
+        )
         .toList();
   }
 }
-
-

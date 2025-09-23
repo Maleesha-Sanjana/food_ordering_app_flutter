@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/catalog_provider.dart';
 import '../models/order.dart';
+import '../models/food_item.dart';
+import '../services/mock_api_client.dart';
 
 class SellerDashboard extends StatefulWidget {
   const SellerDashboard({super.key});
@@ -16,6 +19,11 @@ class _SellerDashboardState extends State<SellerDashboard>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   String _selectedFilter = 'Orders';
+  final MockApiClient _mockApiClient = MockApiClient();
+
+  // Local state for managing items and discounts
+  final List<FoodItem> _localItems = [];
+  final List<Map<String, dynamic>> _localDiscounts = [];
 
   @override
   void initState() {
@@ -28,12 +36,72 @@ class _SellerDashboardState extends State<SellerDashboard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    // Initialize catalog to load food items
+    Future.microtask(() {
+      context.read<CatalogProvider>().fetch();
+      _initializeLocalData();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _initializeLocalData() {
+    // Initialize with sample items
+    _localItems.clear();
+    _localItems.addAll([
+      const FoodItem(
+        id: 1,
+        name: 'Margherita Pizza',
+        description: 'Classic pizza with tomato sauce, mozzarella, and basil',
+        retailPrice: 12.99,
+        sellerId: 2,
+      ),
+      const FoodItem(
+        id: 2,
+        name: 'Chicken Burger',
+        description: 'Juicy grilled chicken breast with lettuce and tomato',
+        retailPrice: 9.99,
+        sellerId: 2,
+      ),
+      const FoodItem(
+        id: 3,
+        name: 'Caesar Salad',
+        description: 'Fresh romaine lettuce with caesar dressing and croutons',
+        retailPrice: 8.50,
+        sellerId: 2,
+      ),
+    ]);
+
+    // Initialize with sample discounts
+    _localDiscounts.clear();
+    _localDiscounts.addAll([
+      {
+        'id': 1,
+        'name': 'Pizza Special',
+        'description': '20% off on all pizzas',
+        'discountType': 'percentage',
+        'value': 20.0,
+        'foodItemId': 1,
+        'foodItemName': 'Margherita Pizza',
+        'isActive': true,
+      },
+      {
+        'id': 2,
+        'name': 'Burger Deal',
+        'description': '\$2 off on chicken burgers',
+        'discountType': 'fixed',
+        'value': 2.0,
+        'foodItemId': 2,
+        'foodItemName': 'Chicken Burger',
+        'isActive': false,
+      },
+    ]);
+
+    setState(() {});
   }
 
   List<OrderModel> get filteredOrders {
@@ -239,7 +307,7 @@ class _SellerDashboardState extends State<SellerDashboard>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Customer ID: ${order.customerId}',
+                        'Customer: ${_mockApiClient.getCustomerName(order.customerId)}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
@@ -301,12 +369,12 @@ class _SellerDashboardState extends State<SellerDashboard>
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '${item.quantity}x Item ${item.foodItemId}',
+                              '${item.quantity}x ${_mockApiClient.getFoodItemName(item.foodItemId)}',
                               style: theme.textTheme.bodyMedium,
                             ),
                           ),
                           Text(
-                            '\$${(0.0).toStringAsFixed(2)}',
+                            '\$${(_mockApiClient.getFoodItem(item.foodItemId)?.retailPrice ?? 0.0).toStringAsFixed(2)}',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
@@ -478,41 +546,92 @@ class _SellerDashboardState extends State<SellerDashboard>
           ),
           const SizedBox(height: 16),
 
-          // Sample items for demo
-          ...List.generate(5, (index) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
+          // Show local food items
+          if (_localItems.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.restaurant_menu,
+                    size: 64,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
                   ),
-                  child: Icon(Icons.fastfood, color: theme.colorScheme.primary),
-                ),
-                title: Text('Food Item ${index + 1}'),
-                subtitle: Text('\$${(10.0 + index * 2).toStringAsFixed(2)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () =>
-                          _showEditItemDialog(context, theme, index),
-                      icon: const Icon(Icons.edit),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No items available',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
-                    IconButton(
-                      onPressed: () =>
-                          _showDeleteItemDialog(context, theme, index),
-                      icon: const Icon(Icons.delete),
-                      color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your first food item to get started',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),
-                  ],
-                ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-            );
-          }),
+            )
+          else
+            ..._localItems.map((item) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(
+                        0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.fastfood,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  title: Text(item.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.description ?? 'No description available',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '\$${item.retailPrice.toStringAsFixed(2)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () =>
+                            _showEditItemDialog(context, theme, item.id),
+                        icon: const Icon(Icons.edit),
+                      ),
+                      IconButton(
+                        onPressed: () =>
+                            _showDeleteItemDialog(context, theme, item.id),
+                        icon: const Icon(Icons.delete),
+                        color: theme.colorScheme.error,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
         ],
       ),
     );
@@ -542,93 +661,343 @@ class _SellerDashboardState extends State<SellerDashboard>
           ),
           const SizedBox(height: 16),
 
-          // Sample discounts for demo
-          ...List.generate(3, (index) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer.withOpacity(
-                      0.3,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
+          // Show local discounts
+          if (_localDiscounts.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Icon(
                     Icons.local_offer,
-                    color: theme.colorScheme.secondary,
+                    size: 64,
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No discounts available',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your first discount to get started',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._localDiscounts.map((discount) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer.withOpacity(
+                        0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.local_offer,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                  title: Text(discount['name']),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        discount['description'],
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.restaurant_menu,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'For: ${discount['foodItemName']}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        discount['discountType'] == 'percentage'
+                            ? '${discount['value']}% off'
+                            : '\$${discount['value']} off',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Switch(
+                        value: discount['isActive'],
+                        onChanged: (value) {
+                          setState(() {
+                            discount['isActive'] = value;
+                          });
+                        },
+                      ),
+                      IconButton(
+                        onPressed: () => _showEditDiscountDialog(
+                          context,
+                          theme,
+                          discount['id'],
+                        ),
+                        icon: const Icon(Icons.edit),
+                      ),
+                      IconButton(
+                        onPressed: () => _showDeleteDiscountDialog(
+                          context,
+                          theme,
+                          discount['id'],
+                        ),
+                        icon: const Icon(Icons.delete),
+                        color: theme.colorScheme.error,
+                      ),
+                    ],
                   ),
                 ),
-                title: Text('Discount ${index + 1}'),
-                subtitle: Text('${10 + index * 5}% off'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Switch(
-                      value: index % 2 == 0, // Demo: some active, some inactive
-                      onChanged: (value) {
-                        // Toggle discount status
-                      },
-                    ),
-                    IconButton(
-                      onPressed: () =>
-                          _showEditDiscountDialog(context, theme, index),
-                      icon: const Icon(Icons.edit),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+              );
+            }).toList(),
         ],
       ),
     );
   }
 
   void _showAddItemDialog(BuildContext context, ThemeData theme) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final priceController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add New Item'),
-        content: const Text(
-          'Item management functionality would be implemented here.',
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Item Name',
+                    hintText: 'e.g., Margherita Pizza',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter item name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'e.g., Classic pizza with tomato sauce...',
+                  ),
+                  maxLines: 2,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter description';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price (\$)',
+                    hintText: '12.99',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter price';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                final newItem = FoodItem(
+                  id: _localItems.length + 1,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  retailPrice: double.parse(priceController.text),
+                  sellerId: 2,
+                );
+                setState(() {
+                  _localItems.add(newItem);
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${newItem.name} added successfully!'),
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                );
+              }
+            },
+            child: const Text('Add Item'),
           ),
         ],
       ),
     );
   }
 
-  void _showEditItemDialog(BuildContext context, ThemeData theme, int index) {
+  void _showEditItemDialog(BuildContext context, ThemeData theme, int itemId) {
+    final item = _localItems.firstWhere((i) => i.id == itemId);
+    final nameController = TextEditingController(text: item.name);
+    final descriptionController = TextEditingController(text: item.description);
+    final priceController = TextEditingController(
+      text: item.retailPrice.toString(),
+    );
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit Item ${index + 1}'),
-        content: const Text(
-          'Item editing functionality would be implemented here.',
+        title: Text('Edit ${item.name}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Item Name'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter item name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter description';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: priceController,
+                  decoration: const InputDecoration(labelText: 'Price (\$)'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter price';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                final updatedItem = FoodItem(
+                  id: item.id,
+                  name: nameController.text,
+                  description: descriptionController.text,
+                  retailPrice: double.parse(priceController.text),
+                  sellerId: item.sellerId,
+                );
+                setState(() {
+                  final index = _localItems.indexWhere((i) => i.id == itemId);
+                  if (index != -1) {
+                    _localItems[index] = updatedItem;
+                  }
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${updatedItem.name} updated successfully!'),
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                );
+              }
+            },
+            child: const Text('Update Item'),
           ),
         ],
       ),
     );
   }
 
-  void _showDeleteItemDialog(BuildContext context, ThemeData theme, int index) {
+  void _showDeleteItemDialog(
+    BuildContext context,
+    ThemeData theme,
+    int itemId,
+  ) {
+    final item = _localItems.firstWhere((i) => i.id == itemId);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Item ${index + 1}?'),
-        content: const Text('Are you sure you want to delete this item?'),
+        title: Text('Delete ${item.name}?'),
+        content: const Text(
+          'Are you sure you want to delete this item? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -636,8 +1005,16 @@ class _SellerDashboardState extends State<SellerDashboard>
           ),
           TextButton(
             onPressed: () {
+              setState(() {
+                _localItems.removeWhere((i) => i.id == itemId);
+              });
               Navigator.pop(context);
-              // Delete item logic would go here
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${item.name} deleted successfully!'),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
             },
             child: Text(
               'Delete',
@@ -650,19 +1027,162 @@ class _SellerDashboardState extends State<SellerDashboard>
   }
 
   void _showAddDiscountDialog(BuildContext context, ThemeData theme) {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final valueController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String discountType = 'percentage';
+    int? selectedFoodItemId;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Discount'),
-        content: const Text(
-          'Discount management functionality would be implemented here.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add New Discount'),
+          contentPadding: const EdgeInsets.all(24),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.9,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Discount Name',
+                      hintText: 'e.g., Pizza Special',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter discount name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'e.g., 20% off on all pizzas',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter description';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Select Food Item',
+                    ),
+                    value: selectedFoodItemId,
+                    items: _localItems.map((item) {
+                      return DropdownMenuItem<int>(
+                        value: item.id,
+                        child: Text(item.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedFoodItemId = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Please select a food item';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Discount Type',
+                    ),
+                    value: discountType,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'percentage',
+                        child: Text('Percentage (%)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'fixed',
+                        child: Text('Fixed Amount (\$)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        discountType = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: valueController,
+                    decoration: InputDecoration(
+                      labelText: discountType == 'percentage'
+                          ? 'Percentage'
+                          : 'Amount (\$)',
+                      hintText: discountType == 'percentage' ? '20' : '5.00',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter value';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final selectedItem = _localItems.firstWhere(
+                    (i) => i.id == selectedFoodItemId,
+                  );
+                  final newDiscount = {
+                    'id': _localDiscounts.length + 1,
+                    'name': nameController.text,
+                    'description': descriptionController.text,
+                    'discountType': discountType,
+                    'value': double.parse(valueController.text),
+                    'foodItemId': selectedFoodItemId,
+                    'foodItemName': selectedItem.name,
+                    'isActive': true,
+                  };
+                  setState(() {
+                    _localDiscounts.add(newDiscount);
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${newDiscount['name']} added successfully!',
+                      ),
+                      backgroundColor: theme.colorScheme.secondary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Add Discount'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -670,19 +1190,208 @@ class _SellerDashboardState extends State<SellerDashboard>
   void _showEditDiscountDialog(
     BuildContext context,
     ThemeData theme,
-    int index,
+    int discountId,
   ) {
+    final discount = _localDiscounts.firstWhere((d) => d['id'] == discountId);
+    final nameController = TextEditingController(text: discount['name']);
+    final descriptionController = TextEditingController(
+      text: discount['description'],
+    );
+    final valueController = TextEditingController(
+      text: discount['value'].toString(),
+    );
+    final formKey = GlobalKey<FormState>();
+    String discountType = discount['discountType'];
+    int? selectedFoodItemId = discount['foodItemId'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit ${discount['name']}'),
+          contentPadding: const EdgeInsets.all(24),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.9,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Discount Name',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter discount name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter description';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Select Food Item',
+                    ),
+                    value: selectedFoodItemId,
+                    items: _localItems.map((item) {
+                      return DropdownMenuItem<int>(
+                        value: item.id,
+                        child: Text(item.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedFoodItemId = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Please select a food item';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Discount Type',
+                    ),
+                    value: discountType,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'percentage',
+                        child: Text('Percentage (%)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'fixed',
+                        child: Text('Fixed Amount (\$)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        discountType = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: valueController,
+                    decoration: InputDecoration(
+                      labelText: discountType == 'percentage'
+                          ? 'Percentage'
+                          : 'Amount (\$)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter value';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final selectedItem = _localItems.firstWhere(
+                    (i) => i.id == selectedFoodItemId,
+                  );
+                  final updatedDiscount = {
+                    'id': discount['id'],
+                    'name': nameController.text,
+                    'description': descriptionController.text,
+                    'discountType': discountType,
+                    'value': double.parse(valueController.text),
+                    'foodItemId': selectedFoodItemId,
+                    'foodItemName': selectedItem.name,
+                    'isActive': discount['isActive'],
+                  };
+                  setState(() {
+                    final index = _localDiscounts.indexWhere(
+                      (d) => d['id'] == discountId,
+                    );
+                    if (index != -1) {
+                      _localDiscounts[index] = updatedDiscount;
+                    }
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${updatedDiscount['name']} updated successfully!',
+                      ),
+                      backgroundColor: theme.colorScheme.secondary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update Discount'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteDiscountDialog(
+    BuildContext context,
+    ThemeData theme,
+    int discountId,
+  ) {
+    final discount = _localDiscounts.firstWhere((d) => d['id'] == discountId);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit Discount ${index + 1}'),
+        title: Text('Delete ${discount['name']}?'),
         content: const Text(
-          'Discount editing functionality would be implemented here.',
+          'Are you sure you want to delete this discount? This action cannot be undone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _localDiscounts.removeWhere((d) => d['id'] == discountId);
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${discount['name']} deleted successfully!'),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
+            },
+            child: Text(
+              'Delete',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
           ),
         ],
       ),
