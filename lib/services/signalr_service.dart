@@ -32,12 +32,16 @@ class SignalRService {
     _connection?.on('OrderAccepted', (args) => handler(args?.firstOrNull));
   }
 
-  Future<void> dispose() async {
+  Future<void> disconnect() async {
     final c = _connection;
     _connection = null;
     if (c != null) {
       await c.stop();
     }
+  }
+
+  Future<void> dispose() async {
+    await disconnect();
   }
 }
 
