@@ -17,11 +17,16 @@ class CatalogProvider extends ChangeNotifier {
       mockApiClient = MockApiClient();
 
   Future<void> fetch() async {
+    print('CatalogProvider: Starting fetch...');
     _loading = true;
     notifyListeners();
     try {
       // Use mock API client for testing
       _items = await mockApiClient.getFoodItems();
+      print('CatalogProvider: Fetched ${_items.length} items');
+      if (_items.isNotEmpty) {
+        print('CatalogProvider: First item: ${_items.first.name}');
+      }
     } catch (e) {
       print('CatalogProvider: Error fetching items: $e');
       _items = [];

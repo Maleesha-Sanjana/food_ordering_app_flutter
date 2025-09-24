@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/catalog_provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/orders_provider.dart';
-import '../models/order.dart';
+import '../models/food_item.dart';
+import 'payment_page.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -31,12 +31,17 @@ class _CustomerDashboardState extends State<CustomerDashboard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
-    // Initialize catalog to load food items
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<CatalogProvider>().fetch();
-      }
-    });
+
+    // Initialize catalog to load food items immediately
+    _loadCatalog();
+  }
+
+  void _loadCatalog() async {
+    try {
+      await context.read<CatalogProvider>().fetch();
+    } catch (e) {
+      print('Customer Dashboard: Error loading catalog: $e');
+    }
   }
 
   @override
@@ -46,8 +51,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
     super.dispose();
   }
 
-  List<dynamic> get filteredItems {
-    final items = context.read<CatalogProvider>().items;
+  List<FoodItem> _getFilteredItems(List<FoodItem> items) {
     if (_searchQuery.isEmpty) return items;
     final filtered = items
         .where(
@@ -68,6 +72,13 @@ class _CustomerDashboardState extends State<CustomerDashboard>
     final cart = context.watch<CartProvider>();
     final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
+
+    // Debug information
+    if (catalog.items.isEmpty && !catalog.loading) {
+      print(
+        'Customer Dashboard - No items loaded, catalog loading: ${catalog.loading}',
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -247,7 +258,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 Expanded(
                   child: catalog.loading
                       ? const Center(child: CircularProgressIndicator())
-                      : filteredItems.isEmpty
+                      : _getFilteredItems(catalog.items).isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -261,7 +272,9 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No items found',
+                                catalog.items.isEmpty
+                                    ? 'No food items available'
+                                    : 'No items found',
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   color: theme.colorScheme.onSurface
                                       .withOpacity(0.7),
@@ -279,9 +292,9 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),
-                          itemCount: filteredItems.length,
+                          itemCount: _getFilteredItems(catalog.items).length,
                           itemBuilder: (context, i) {
-                            final item = filteredItems[i];
+                            final item = _getFilteredItems(catalog.items)[i];
                             return _buildFoodCard(context, item, cart, theme);
                           },
                         ),
@@ -312,10 +325,14 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        Flexible(
+                          child: Text(
                           '${cart.lines.length} items',
                           style: theme.textTheme.titleMedium,
+                            overflow: TextOverflow.ellipsis,
                         ),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '\$${cart.grandTotal.toStringAsFixed(2)}',
                           style: theme.textTheme.headlineSmall?.copyWith(
@@ -331,44 +348,16 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final user = auth.currentUser;
-                          if (user == null || cart.lines.isEmpty) return;
-
-                          final sellerId = cart.lines.first.item.sellerId;
-                          final order = OrderModel(
-                            id: 0,
-                            customerId: user.id,
-                            sellerId: sellerId,
-                            items: cart.toOrderItems(),
-                            subtotal: cart.subtotal,
-                            discount: cart.discount,
-                            grandTotal: cart.grandTotal,
-                            paymentStatus: 'Paid',
-                            orderStatus: 'Pending',
+                        onPressed: () {
+                          if (cart.lines.isEmpty) return;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentPage(),
+                            ),
                           );
-
-                          await context.read<OrdersProvider>().createOrder(
-                            order,
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text(
-                                  'Order placed successfully!',
-                                ),
-                                backgroundColor: theme.colorScheme.primary,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                            cart.clear();
-                          }
                         },
                         icon: const Icon(Icons.payment),
-                        label: const Text('Checkout'),
+                        label: const Text('Proceed to Payment'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
@@ -493,36 +482,78 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                           ),
                         ),
                         title: Text(line.item.name),
-                        subtitle: Text(
-                          '\$${line.item.retailPrice.toStringAsFixed(2)} each',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              line.type == 'wholesale' &&
+                                      line.item.isWholesaleAvailable &&
+                                      line.item.wholesalePrice != null
+                                  ? 'Wholesale: \$${line.item.wholesalePrice!.toStringAsFixed(2)} each'
+                                  : 'Retail: \$${line.item.retailPrice.toStringAsFixed(2)} each',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: line.type == 'wholesale'
+                                    ? theme.colorScheme.secondary
+                                    : theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              'Total: \$${line.lineTotal.toStringAsFixed(2)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        trailing: Row(
+                        trailing: SizedBox(
+                          width: 120,
+                          child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               onPressed: () {
-                                cart.decrementQuantity(line.item);
-                                _applySampleDiscounts(cart);
+                                  cart.decrementQuantity(
+                                    line.item,
+                                    type: line.type,
+                                  );
                               },
                               icon: const Icon(Icons.remove_circle_outline),
+                                iconSize: 20,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
                             ),
                             Text('${line.quantity}'),
                             IconButton(
                               onPressed: () {
-                                cart.incrementQuantity(line.item);
-                                _applySampleDiscounts(cart);
+                                  cart.incrementQuantity(
+                                    line.item,
+                                    type: line.type,
+                                  );
                               },
                               icon: const Icon(Icons.add_circle_outline),
+                                iconSize: 20,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
                             ),
                             IconButton(
                               onPressed: () {
-                                cart.remove(line.item);
-                                _applySampleDiscounts(cart);
+                                  cart.remove(line.item, type: line.type);
                               },
                               icon: const Icon(Icons.delete_outline),
                               color: theme.colorScheme.error,
+                                iconSize: 20,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
                             ),
                           ],
+                          ),
                         ),
                       ),
                     );
@@ -544,7 +575,13 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Subtotal:', style: theme.textTheme.bodyLarge),
+                        Flexible(
+                          child: Text(
+                            'Subtotal:',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '\$${cart.subtotal.toStringAsFixed(2)}',
                           style: theme.textTheme.bodyLarge?.copyWith(
@@ -560,12 +597,15 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
+                          Flexible(
+                            child: Text(
                             'Discount:',
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: theme.colorScheme.secondary,
                             ),
                           ),
+                          ),
+                          const SizedBox(width: 8),
                           Text(
                             '-\$${cart.discount.toStringAsFixed(2)}',
                             style: theme.textTheme.bodyLarge?.copyWith(
@@ -584,12 +624,15 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        Flexible(
+                          child: Text(
                           'Grand Total:',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '\$${cart.grandTotal.toStringAsFixed(2)}',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -611,7 +654,11 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    // Order placement logic is already in the bottom bar
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PaymentPage(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
@@ -622,7 +669,7 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                     ),
                   ),
                   child: Text(
-                    'Proceed to Checkout',
+                    'Proceed to Payment',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -701,54 +748,73 @@ class _CustomerDashboardState extends State<CustomerDashboard>
                 ),
               const SizedBox(height: 8),
               // Price and Add Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                  // Price display
                       Text(
-                        '\$${item.retailPrice.toStringAsFixed(2)}',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                    'Retail: \$${item.retailPrice.toStringAsFixed(2)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      // Discount badge
-                      if (item.retailPrice >= 15.0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (item.isWholesaleAvailable && item.wholesalePrice != null)
+                    Text(
+                      'Wholesale: \$${item.wholesalePrice!.toStringAsFixed(2)} (min ${item.wholesaleMinQuantity})',
+                      style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  // Add buttons
+                  Row(
+                    children: [
+                      if (item.isRetailAvailable)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => cart.add(item),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            'Discount Available',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSecondary,
-                              fontWeight: FontWeight.w500,
+                            ),
+                            child: const Text(
+                              'Retail',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      if (item.isRetailAvailable && item.isWholesaleAvailable)
+                        const SizedBox(width: 8),
+                      if (item.isWholesaleAvailable)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _showWholesaleDialog(
+                              context,
+                              item,
+                              cart,
+                              theme,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.secondary,
+                              foregroundColor: theme.colorScheme.onSecondary,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                            ),
+                            child: const Text(
+                              'Wholesale',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
                     ],
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      onPressed: () => cart.add(item),
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      iconSize: 20,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -776,5 +842,169 @@ class _CustomerDashboardState extends State<CustomerDashboard>
       // No discount for smaller orders
       cart.applyDiscount(0.0);
     }
+  }
+
+  void _showWholesaleDialog(
+    BuildContext context,
+    dynamic item,
+    CartProvider cart,
+    ThemeData theme,
+  ) {
+    int quantity = item.wholesaleMinQuantity ?? 1;
+    final quantityController = TextEditingController(text: quantity.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Wholesale Order - ${item.name}'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer.withOpacity(
+                      0.3,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Retail Price:',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '\$${item.retailPrice.toStringAsFixed(2)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Wholesale Price:',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '\$${item.wholesalePrice!.toStringAsFixed(2)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Min Quantity:',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '${item.wholesaleMinQuantity}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: quantityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      quantity =
+                          int.tryParse(value) ?? item.wholesaleMinQuantity ?? 1;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total:', style: theme.textTheme.titleMedium),
+                      Text(
+                        '\$${(item.wholesalePrice! * quantity).toStringAsFixed(2)}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final qty =
+                    int.tryParse(quantityController.text) ??
+                    item.wholesaleMinQuantity ??
+                    1;
+                if (qty >= (item.wholesaleMinQuantity ?? 1)) {
+                  // Add wholesale items to cart with wholesale type
+                  for (int i = 0; i < qty; i++) {
+                    cart.add(item, type: 'wholesale');
+                  }
+                  _applySampleDiscounts(cart);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Added $qty ${item.name} (wholesale) to cart',
+                      ),
+                      backgroundColor: theme.colorScheme.secondary,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Minimum quantity for wholesale is ${item.wholesaleMinQuantity}',
+                      ),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Add to Cart'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
