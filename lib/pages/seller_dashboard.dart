@@ -604,12 +604,49 @@ class _SellerDashboardState extends State<SellerDashboard>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '\$${item.retailPrice.toStringAsFixed(2)}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
+                      // Price information
+                      Row(
+                        children: [
+                          if (item.isRetailAvailable) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Retail: \$${item.retailPrice.toStringAsFixed(2)}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            if (item.isWholesaleAvailable)
+                              const SizedBox(width: 8),
+                          ],
+                          if (item.isWholesaleAvailable)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Wholesale: \$${item.wholesalePrice!.toStringAsFixed(2)} (min ${item.wholesaleMinQuantity})',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.secondary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -789,100 +826,213 @@ class _SellerDashboardState extends State<SellerDashboard>
   void _showAddItemDialog(BuildContext context, ThemeData theme) {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
-    final priceController = TextEditingController();
+    final retailPriceController = TextEditingController();
+    final wholesalePriceController = TextEditingController();
+    final wholesaleMinQuantityController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    bool isRetailAvailable = true;
+    bool isWholesaleAvailable = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Item'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Item Name',
-                    hintText: 'e.g., Margherita Pizza',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter item name';
-                    }
-                    return null;
-                  },
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add New Item'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Item Name',
+                        hintText: 'e.g., Margherita Pizza',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter item name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        hintText: 'e.g., Classic pizza with tomato sauce...',
+                      ),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter description';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Retail Options
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: isRetailAvailable,
+                                  onChanged: (value) {
+                                    setDialogState(() {
+                                      isRetailAvailable = value ?? true;
+                                    });
+                                  },
+                                ),
+                                const Text('Retail Available'),
+                              ],
+                            ),
+                            if (isRetailAvailable)
+                              TextFormField(
+                                controller: retailPriceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Retail Price (\$)',
+                                  hintText: '12.99',
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (isRetailAvailable) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter retail price';
+                                    }
+                                    if (double.tryParse(value) == null) {
+                                      return 'Please enter a valid price';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Wholesale Options
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: isWholesaleAvailable,
+                                  onChanged: (value) {
+                                    setDialogState(() {
+                                      isWholesaleAvailable = value ?? false;
+                                    });
+                                  },
+                                ),
+                                const Text('Wholesale Available'),
+                              ],
+                            ),
+                            if (isWholesaleAvailable) ...[
+                              TextFormField(
+                                controller: wholesalePriceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Wholesale Price (\$)',
+                                  hintText: '9.99',
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (isWholesaleAvailable) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter wholesale price';
+                                    }
+                                    if (double.tryParse(value) == null) {
+                                      return 'Please enter a valid price';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: wholesaleMinQuantityController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Minimum Quantity',
+                                  hintText: '5',
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (isWholesaleAvailable) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter minimum quantity';
+                                    }
+                                    if (int.tryParse(value) == null) {
+                                      return 'Please enter a valid quantity';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'e.g., Classic pizza with tomato sauce...',
-                  ),
-                  maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter description';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Price (\$)',
-                    hintText: '12.99',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter price';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter a valid price';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final newItem = FoodItem(
+                    id: _localItems.length + 1,
+                    name: nameController.text,
+                    description: descriptionController.text,
+                    retailPrice: isRetailAvailable
+                        ? double.parse(retailPriceController.text)
+                        : 0.0,
+                    wholesalePrice: isWholesaleAvailable
+                        ? double.parse(wholesalePriceController.text)
+                        : null,
+                    wholesaleMinQuantity: isWholesaleAvailable
+                        ? int.parse(wholesaleMinQuantityController.text)
+                        : null,
+                    sellerId: 2,
+                    isRetailAvailable: isRetailAvailable,
+                    isWholesaleAvailable: isWholesaleAvailable,
+                  );
+                  setState(() {
+                    _localItems.add(newItem);
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${newItem.name} added successfully!'),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Add Item'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                final newItem = FoodItem(
-                  id: _localItems.length + 1,
-                  name: nameController.text,
-                  description: descriptionController.text,
-                  retailPrice: double.parse(priceController.text),
-                  sellerId: 2,
-                );
-                setState(() {
-                  _localItems.add(newItem);
-                });
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${newItem.name} added successfully!'),
-                    backgroundColor: theme.colorScheme.primary,
-                  ),
-                );
-              }
-            },
-            child: const Text('Add Item'),
-          ),
-        ],
       ),
     );
   }

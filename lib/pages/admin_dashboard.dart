@@ -4,6 +4,7 @@ import '../providers/orders_provider.dart';
 import '../providers/catalog_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/order.dart';
+import '../services/mock_api_client.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -18,6 +19,9 @@ class _AdminDashboardState extends State<AdminDashboard>
   late Animation<double> _fadeAnimation;
   String _selectedTab = 'Overview';
 
+  // Local state for managing users
+  List<Map<String, dynamic>> _localUsers = [];
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +33,58 @@ class _AdminDashboardState extends State<AdminDashboard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+    _initializeUsers();
+  }
+
+  void _initializeUsers() {
+    // Initialize with mock users from the API client
+    _localUsers = [
+      {
+        'id': 1,
+        'name': 'Customer User',
+        'email': 'customer@gmail.com',
+        'role': 'customer',
+        'phone': '+1 (555) 123-4567',
+        'isActive': true,
+        'createdAt': DateTime.now().subtract(const Duration(days: 30)),
+      },
+      {
+        'id': 2,
+        'name': 'Seller User',
+        'email': 'seller@gmail.com',
+        'role': 'seller',
+        'phone': '+1 (555) 987-6543',
+        'isActive': true,
+        'createdAt': DateTime.now().subtract(const Duration(days: 15)),
+      },
+      {
+        'id': 3,
+        'name': 'Admin User',
+        'email': 'admin@gmail.com',
+        'role': 'admin',
+        'phone': '+1 (555) 456-7890',
+        'isActive': true,
+        'createdAt': DateTime.now().subtract(const Duration(days: 5)),
+      },
+      {
+        'id': 4,
+        'name': 'John Doe',
+        'email': 'john.doe@example.com',
+        'role': 'customer',
+        'phone': '+1 (555) 111-2222',
+        'isActive': false,
+        'createdAt': DateTime.now().subtract(const Duration(days: 10)),
+      },
+      {
+        'id': 5,
+        'name': 'Jane Smith',
+        'email': 'jane.smith@example.com',
+        'role': 'seller',
+        'phone': '+1 (555) 333-4444',
+        'isActive': true,
+        'createdAt': DateTime.now().subtract(const Duration(days: 3)),
+      },
+    ];
   }
 
   @override
@@ -109,44 +165,21 @@ class _AdminDashboardState extends State<AdminDashboard>
                               ],
                             ),
                           ),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  'Live Data',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
                               IconButton(
                                 onPressed: () async {
                                   final auth = context.read<AuthProvider>();
                                   await auth.logout();
                                   if (mounted) {
-                                    Navigator.of(
-                                      context,
-                                    ).pushReplacementNamed('/');
+                                Navigator.of(context).pushReplacementNamed('/');
                                   }
                                 },
                                 icon: Icon(
                                   Icons.logout,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.7,
+                              ),
                                 ),
                                 tooltip: 'Logout',
-                              ),
-                            ],
                           ),
                         ],
                       ),
@@ -482,82 +515,6 @@ class _AdminDashboardState extends State<AdminDashboard>
 
           const SizedBox(height: 24),
 
-          // Role Statistics Section
-          Text(
-            'User Statistics',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Total Customers',
-                          '45',
-                          Icons.person,
-                          theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Active Sellers',
-                          '8',
-                          Icons.store,
-                          theme.colorScheme.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'System Admins',
-                          '2',
-                          Icons.admin_panel_settings,
-                          theme.colorScheme.error,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildRoleCard(
-                          context,
-                          theme,
-                          'Pending Approval',
-                          '3',
-                          Icons.pending,
-                          theme.colorScheme.tertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
           // User Management Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -655,11 +612,11 @@ class _AdminDashboardState extends State<AdminDashboard>
 
                   const SizedBox(height: 8),
 
-                  // Sample users for demo
-                  ...List.generate(5, (index) {
-                    final roles = ['customer', 'seller', 'admin'];
-                    final role = roles[index % 3];
-                    final isActive = index % 4 != 3; // One inactive user
+                  // Real users from local data
+                  ..._localUsers.map((user) {
+                    final role = user['role'] as String;
+                    final isActive = user['isActive'] as bool;
+                    final index = _localUsers.indexOf(user);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
@@ -705,7 +662,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'User ${index + 1}',
+                                        user['name'] as String,
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                               fontWeight: FontWeight.w600,
@@ -713,7 +670,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       Text(
-                                        'user${index + 1}@foodhub.com',
+                                        user['email'] as String,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color: theme.colorScheme.onSurface
@@ -868,7 +825,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         ],
                       ),
                     );
-                  }),
+                  }).toList(),
                 ],
               ),
             ),
@@ -971,6 +928,9 @@ class _AdminDashboardState extends State<AdminDashboard>
     int pendingCount,
     int completedCount,
   ) {
+    final mockApiClient = MockApiClient();
+    final sellerName = mockApiClient.getSellerName(sellerId);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -1001,7 +961,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Seller #$sellerId',
+                        sellerName,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -1089,6 +1049,9 @@ class _AdminDashboardState extends State<AdminDashboard>
     OrderModel order,
     ThemeData theme,
   ) {
+    final mockApiClient = MockApiClient();
+    final customerName = mockApiClient.getCustomerName(order.customerId);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -1109,7 +1072,7 @@ class _AdminDashboardState extends State<AdminDashboard>
         ),
         title: Text('Order #${order.id}'),
         subtitle: Text(
-          'Customer: ${order.customerId} | \$${order.grandTotal.toStringAsFixed(2)}',
+          'Customer: $customerName | \$${order.grandTotal.toStringAsFixed(2)}',
         ),
         trailing: Chip(
           label: Text(order.orderStatus),
@@ -1131,55 +1094,133 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
-  Widget _buildRoleCard(
-    BuildContext context,
-    ThemeData theme,
-    String title,
-    String count,
-    IconData icon,
-    Color color,
-  ) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              count,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showCreateUserDialog(BuildContext context, ThemeData theme) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    String selectedRole = 'customer';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New User'),
-        content: const Text(
-          'User creation functionality would be implemented here.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create New User'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Form(
+              key: formKey,
+        child: Column(
+                mainAxisSize: MainAxisSize.min,
+          children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter full name';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter email';
+                      }
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Role',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedRole,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'customer',
+                        child: Text('Customer'),
+                      ),
+                      DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedRole = value!;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  final newUser = {
+                    'id': _localUsers.length + 1,
+                    'name': nameController.text.trim(),
+                    'email': emailController.text.trim(),
+                    'role': selectedRole,
+                    'phone': phoneController.text.trim(),
+                    'isActive': true,
+                    'createdAt': DateTime.now(),
+                  };
+
+                  setState(() {
+                    _localUsers.add(newUser);
+                  });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${newUser['name']} created successfully!'),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Create User'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1204,19 +1245,85 @@ class _AdminDashboardState extends State<AdminDashboard>
   }
 
   void _showEditUserDialog(BuildContext context, ThemeData theme, int index) {
+    final user = _localUsers[index];
+    String selectedRole = user['role'] as String;
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit User ${index + 1}'),
-        content: const Text(
-          'User role editing functionality would be implemented here.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Edit ${user['name']}'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Current Role: ${user['role'].toString().toUpperCase()}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Select New Role',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedRole,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'customer',
+                        child: Text('Customer'),
+                      ),
+                      DropdownMenuItem(value: 'seller', child: Text('Seller')),
+                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                    ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedRole = value!;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a role';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  setState(() {
+                    _localUsers[index]['role'] = selectedRole;
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${user['name']} role updated to ${selectedRole.toUpperCase()}',
+                      ),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update Role'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1226,38 +1333,21 @@ class _AdminDashboardState extends State<AdminDashboard>
     ThemeData theme,
     int index,
   ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Suspend User ${index + 1}?'),
-        content: const Text('Are you sure you want to suspend this user?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Suspend user logic would go here
-            },
-            child: Text(
-              'Suspend',
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final user = _localUsers[index];
+    final isActive = user['isActive'] as bool;
+    final action = isActive ? 'Suspend' : 'Activate';
+    final actionColor = isActive
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
 
-  void _showDeleteUserDialog(BuildContext context, ThemeData theme, int index) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete User ${index + 1}?'),
-        content: const Text(
-          'Are you sure you want to permanently delete this user?',
+        title: Text('$action ${user['name']}?'),
+        content: Text(
+          isActive
+              ? 'Are you sure you want to suspend this user? They will not be able to access the system.'
+              : 'Are you sure you want to activate this user? They will regain access to the system.',
         ),
         actions: [
           TextButton(
@@ -1266,8 +1356,53 @@ class _AdminDashboardState extends State<AdminDashboard>
           ),
           TextButton(
             onPressed: () {
+              setState(() {
+                _localUsers[index]['isActive'] = !isActive;
+              });
               Navigator.pop(context);
-              // Delete user logic would go here
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${user['name']} has been ${isActive ? 'suspended' : 'activated'}',
+                  ),
+                  backgroundColor: actionColor,
+                ),
+              );
+            },
+            child: Text(action, style: TextStyle(color: actionColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteUserDialog(BuildContext context, ThemeData theme, int index) {
+    final user = _localUsers[index];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${user['name']}?'),
+        content: Text(
+          'Are you sure you want to permanently delete ${user['name']}? This action cannot be undone and will remove all their data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _localUsers.removeAt(index);
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${user['name']} has been deleted'),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
             },
             child: Text(
               'Delete',

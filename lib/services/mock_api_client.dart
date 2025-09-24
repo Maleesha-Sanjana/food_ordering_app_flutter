@@ -42,35 +42,64 @@ class MockApiClient {
       name: 'Margherita Pizza',
       description: 'Classic pizza with tomato sauce, mozzarella, and basil',
       retailPrice: 12.99,
+      wholesalePrice: 9.99,
+      wholesaleMinQuantity: 5,
       sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: true,
     ),
     const FoodItem(
       id: 2,
       name: 'Chicken Burger',
       description: 'Juicy grilled chicken breast with lettuce and tomato',
       retailPrice: 9.99,
+      wholesalePrice: 7.99,
+      wholesaleMinQuantity: 10,
       sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: true,
     ),
     const FoodItem(
       id: 3,
       name: 'Caesar Salad',
       description: 'Fresh romaine lettuce with caesar dressing and croutons',
       retailPrice: 8.50,
+      wholesalePrice: 6.50,
+      wholesaleMinQuantity: 8,
       sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: true,
     ),
     const FoodItem(
       id: 4,
       name: 'Pasta Carbonara',
       description: 'Creamy pasta with bacon and parmesan cheese',
       retailPrice: 14.99,
+      wholesalePrice: 11.99,
+      wholesaleMinQuantity: 6,
       sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: true,
     ),
     const FoodItem(
       id: 5,
       name: 'Chocolate Cake',
       description: 'Rich chocolate cake with vanilla ice cream',
       retailPrice: 6.99,
+      wholesalePrice: 4.99,
+      wholesaleMinQuantity: 12,
       sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: true,
+    ),
+    const FoodItem(
+      id: 6,
+      name: 'Fresh Salad',
+      description: 'Mixed greens with seasonal vegetables',
+      retailPrice: 7.50,
+      sellerId: 2,
+      isRetailAvailable: true,
+      isWholesaleAvailable: false,
     ),
   ];
 
@@ -200,7 +229,9 @@ class MockApiClient {
 
   // Mock get food items
   Future<List<FoodItem>> getFoodItems() async {
+    print('MockApiClient: Getting food items...');
     await _simulateDelay();
+    print('MockApiClient: Returning ${_mockFoodItems.length} items');
     return List.from(_mockFoodItems);
   }
 
@@ -273,6 +304,16 @@ class MockApiClient {
       return customer.name ?? 'Unknown Customer';
     } catch (e) {
       return 'Unknown Customer';
+    }
+  }
+
+  // Get seller name by ID
+  String getSellerName(int sellerId) {
+    try {
+      final seller = _mockUsers.firstWhere((user) => user.id == sellerId);
+      return seller.name ?? 'Unknown Seller';
+    } catch (e) {
+      return 'Unknown Seller';
     }
   }
 

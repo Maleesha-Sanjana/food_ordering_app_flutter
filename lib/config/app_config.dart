@@ -9,7 +9,7 @@ class AppConfig {
   static const String iosBaseUrl = 'http://localhost:5277';
 
   // Toggle this to true when pointing the app to Azure backend
-  static const bool useAzure = true;
+  static const bool useAzure = false;
 
   static String get apiBaseUrl {
     if (useAzure) return azureBaseUrl;

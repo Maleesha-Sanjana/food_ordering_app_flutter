@@ -56,12 +56,6 @@
       "languageVersion": "3.3"
     },
     {
-      "name": "fixnum",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/fixnum-1.1.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.1"
-    },
-    {
       "name": "flutter",
       "rootUri": "file:///Users/maleeshasanjana/flutter/packages/flutter",
       "packageUri": "lib/",
@@ -81,9 +75,9 @@
     },
     {
       "name": "http",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/http-1.5.0",
+      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/http-0.13.6",
       "packageUri": "lib/",
-      "languageVersion": "3.4"
+      "languageVersion": "2.19"
     },
     {
       "name": "http_parser",
@@ -158,28 +152,16 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "pool",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/pool-1.5.2",
-      "packageUri": "lib/",
-      "languageVersion": "3.4"
-    },
-    {
       "name": "provider",
       "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/provider-6.1.5+1",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
     {
-      "name": "shelf",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/shelf-1.4.2",
-      "packageUri": "lib/",
-      "languageVersion": "3.4"
-    },
-    {
       "name": "signalr_core",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/signalr_core-1.1.2",
+      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/signalr_core-1.1.1",
       "packageUri": "lib/",
-      "languageVersion": "3.2"
+      "languageVersion": "2.12"
     },
     {
       "name": "sky_engine",
@@ -194,22 +176,10 @@
       "languageVersion": "3.1"
     },
     {
-      "name": "sprintf",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/sprintf-7.0.0",
+      "name": "sse_client",
+      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/sse_client-0.1.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
-    },
-    {
-      "name": "sse",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/sse-4.1.8",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
-      "name": "sse_channel",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/sse_channel-0.1.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.2"
     },
     {
       "name": "stack_trace",
@@ -254,12 +224,6 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "uuid",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/uuid-4.5.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
       "name": "vector_math",
       "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/vector_math-2.2.0",
       "packageUri": "lib/",
@@ -272,16 +236,10 @@
       "languageVersion": "3.5"
     },
     {
-      "name": "web",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/web-0.5.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
       "name": "web_socket_channel",
-      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/web_socket_channel-2.4.5",
+      "rootUri": "file:///Users/maleeshasanjana/.pub-cache/hosted/pub.dev/web_socket_channel-2.4.0",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "2.15"
     },
     {
       "name": "food_ordering",

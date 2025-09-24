@@ -23,23 +23,23 @@ class AuthProvider extends ChangeNotifier {
       mockApiClient = MockApiClient(),
       signalRService = signalRService ?? SignalRService();
 
+  // Login with email and password
   Future<void> login(String email, String password) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Use mock API client for testing
-      final authResponse = await mockApiClient.login(email, password);
-      _currentUser = authResponse.user;
-      // Skip SignalR connection for now to avoid errors
+      // Use mock API for authentication
+      final response = await mockApiClient.login(email, password);
+      _currentUser = response.user;
+      // Skip SignalR connection for mock authentication
       // await signalRService.connect(
-      //   role: authResponse.user.role,
-      //   userId: authResponse.user.id,
+      //   role: response.user.role,
+      //   userId: response.user.id,
       // );
     } catch (e) {
       _error = e.toString();
-      print('Login error: $e'); // Debug print
       rethrow;
     } finally {
       _loading = false;
@@ -47,30 +47,35 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Sign up with email and password
   Future<void> signup({
     required String email,
     required String password,
-    String? name,
+    required String name,
     String? phone,
+    String role = 'customer',
   }) async {
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final request = AuthRequest(
-        email: email,
-        password: password,
-        name: name,
-        phone: phone,
-        role: 'customer', // Default role for new signups
+      // Use mock API for user creation
+      final response = await mockApiClient.signup(
+        AuthRequest(
+          email: email,
+          password: password,
+          name: name,
+          phone: phone,
+          role: role,
+        ),
       );
-      final authResponse = await mockApiClient.signup(request);
-      _currentUser = authResponse.user;
-      // Skip SignalR connection for now to avoid errors
+
+      _currentUser = response.user;
+      // Skip SignalR connection for mock authentication
       // await signalRService.connect(
-      //   role: authResponse.user.role,
-      //   userId: authResponse.user.id,
+      //   role: response.user.role,
+      //   userId: response.user.id,
       // );
     } catch (e) {
       _error = e.toString();
@@ -81,36 +86,22 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Logout
   Future<void> logout() async {
-    _currentUser = null;
-    _error = null;
-    // Skip SignalR disconnect for now
-    // await signalRService.disconnect();
-    notifyListeners();
+    try {
+      // Skip SignalR disconnect for mock authentication
+      // await signalRService.disconnect();
+      _currentUser = null;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 
+  // Clear error
   void clearError() {
     _error = null;
     notifyListeners();
-  }
-
-  // Keep the old method for backward compatibility during development
-  Future<void> identifyByEmail(String email) async {
-    _loading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final user = await mockApiClient.identifyUser(email);
-      _currentUser = user;
-      // Skip SignalR connection for now
-      // await signalRService.connect(role: user.role, userId: user.id);
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
   }
 }
