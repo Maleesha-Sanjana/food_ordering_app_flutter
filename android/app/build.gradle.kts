@@ -3,12 +3,12 @@ plugins {
     id("kotlin-android")
     // Flutter Gradle Plugin must be applied after Android and Kotlin
     id("dev.flutter.flutter-gradle-plugin")
-    // Firebase Google Services plugin
-    id("com.google.gms.google-services")
+    // Firebase Google Services plugin - temporarily disabled for build
+    // id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.food_ordering"
+    namespace = "com.maleesha.foodordering"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
