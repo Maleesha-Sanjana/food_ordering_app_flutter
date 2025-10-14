@@ -1,78 +1,160 @@
-class OrderItem {
-  final int foodItemId;
-  final int quantity;
-  final String type; // retail | wholesale
+import 'food_item.dart';
 
-  const OrderItem({
-    required this.foodItemId,
-    required this.quantity,
-    required this.type,
-  });
-
-  factory OrderItem.fromJson(Map<String, dynamic> json) {
-    return OrderItem(
-      foodItemId: json['foodItemId'] as int,
-      quantity: json['quantity'] as int,
-      type: json['type'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'foodItemId': foodItemId,
-    'quantity': quantity,
-    'type': type,
-  };
-}
-
-class OrderModel {
-  final int id;
-  final int customerId;
-  final int sellerId;
+class Order {
+  final String id;
+  final String tableNumber;
+  final String seatNumber;
+  final String serviceType;
+  final double totalAmount;
+  final String status;
+  final String? remarks;
+  final String createdBy;
+  final DateTime createdAt;
   final List<OrderItem> items;
-  final double subtotal;
-  final double? discount;
-  final double grandTotal;
-  final String paymentStatus; // Paid
-  final String orderStatus; // Pending | Accepted
 
-  const OrderModel({
+  const Order({
     required this.id,
-    required this.customerId,
-    required this.sellerId,
-    required this.items,
-    required this.subtotal,
-    this.discount,
-    required this.grandTotal,
-    required this.paymentStatus,
-    required this.orderStatus,
+    required this.tableNumber,
+    required this.seatNumber,
+    required this.serviceType,
+    required this.totalAmount,
+    required this.status,
+    this.remarks,
+    required this.createdBy,
+    required this.createdAt,
+    this.items = const [],
   });
 
-  factory OrderModel.fromJson(Map<String, dynamic> json) {
-    final itemsJson = (json['items'] as List<dynamic>? ?? []);
-    return OrderModel(
-      id: json['id'] as int,
-      customerId: json['customerId'] as int,
-      sellerId: json['sellerId'] as int,
-      items: itemsJson
-          .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      subtotal: (json['subtotal'] as num).toDouble(),
-      discount: (json['discount'] as num?)?.toDouble(),
-      grandTotal: (json['grandTotal'] as num).toDouble(),
-      paymentStatus: json['paymentStatus'] as String,
-      orderStatus: json['orderStatus'] as String,
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      id: json['id']?.toString() ?? '',
+      tableNumber: json['tableNumber']?.toString() ?? '',
+      seatNumber: json['seatNumber']?.toString() ?? '',
+      serviceType: json['serviceType']?.toString() ?? '',
+      totalAmount:
+          double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
+      status: json['status']?.toString() ?? 'pending',
+      remarks: json['remarks']?.toString(),
+      createdBy: json['createdBy']?.toString() ?? '',
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      items:
+          (json['items'] as List<dynamic>?)
+              ?.map((item) => OrderItem.fromJson(item as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'customerId': customerId,
-    'sellerId': sellerId,
-    'items': items.map((e) => e.toJson()).toList(),
-    'subtotal': subtotal,
-    'discount': discount,
-    'grandTotal': grandTotal,
-    'paymentStatus': paymentStatus,
-    'orderStatus': orderStatus,
+    'tableNumber': tableNumber,
+    'seatNumber': seatNumber,
+    'serviceType': serviceType,
+    'totalAmount': totalAmount,
+    'status': status,
+    'remarks': remarks,
+    'createdBy': createdBy,
+    'createdAt': createdAt.toIso8601String(),
+    'items': items.map((item) => item.toJson()).toList(),
   };
+
+  Order copyWith({
+    String? id,
+    String? tableNumber,
+    String? seatNumber,
+    String? serviceType,
+    double? totalAmount,
+    String? status,
+    String? remarks,
+    String? createdBy,
+    DateTime? createdAt,
+    List<OrderItem>? items,
+  }) {
+    return Order(
+      id: id ?? this.id,
+      tableNumber: tableNumber ?? this.tableNumber,
+      seatNumber: seatNumber ?? this.seatNumber,
+      serviceType: serviceType ?? this.serviceType,
+      totalAmount: totalAmount ?? this.totalAmount,
+      status: status ?? this.status,
+      remarks: remarks ?? this.remarks,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+    );
+  }
 }
+
+class OrderItem {
+  final String id;
+  final String orderId;
+  final String menuItemId;
+  final int quantity;
+  final double unitPrice;
+  final double totalPrice;
+  final String? specialInstructions;
+  final FoodItem? menuItem;
+
+  const OrderItem({
+    required this.id,
+    required this.orderId,
+    required this.menuItemId,
+    required this.quantity,
+    required this.unitPrice,
+    required this.totalPrice,
+    this.specialInstructions,
+    this.menuItem,
+  });
+
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    return OrderItem(
+      id: json['id']?.toString() ?? '',
+      orderId: json['orderId']?.toString() ?? '',
+      menuItemId: json['menuItemId']?.toString() ?? '',
+      quantity: int.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+      unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0.0,
+      totalPrice: double.tryParse(json['totalPrice']?.toString() ?? '0') ?? 0.0,
+      specialInstructions: json['specialInstructions']?.toString(),
+      menuItem: json['menuItem'] != null
+          ? FoodItem.fromJson(json['menuItem'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'orderId': orderId,
+    'menuItemId': menuItemId,
+    'quantity': quantity,
+    'unitPrice': unitPrice,
+    'totalPrice': totalPrice,
+    'specialInstructions': specialInstructions,
+    'menuItem': menuItem?.toJson(),
+  };
+
+  OrderItem copyWith({
+    String? id,
+    String? orderId,
+    String? menuItemId,
+    int? quantity,
+    double? unitPrice,
+    double? totalPrice,
+    String? specialInstructions,
+    FoodItem? menuItem,
+  }) {
+    return OrderItem(
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+      menuItemId: menuItemId ?? this.menuItemId,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      totalPrice: totalPrice ?? this.totalPrice,
+      specialInstructions: specialInstructions ?? this.specialInstructions,
+      menuItem: menuItem ?? this.menuItem,
+    );
+  }
+}
+
+

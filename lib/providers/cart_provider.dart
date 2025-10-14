@@ -1,153 +1,185 @@
 import 'package:flutter/foundation.dart';
+import '../models/cart_item.dart';
 import '../models/food_item.dart';
-import '../models/order.dart';
-import '../models/payment.dart';
-
-class CartLine {
-  final FoodItem item;
-  int quantity;
-  String type; // retail | wholesale
-
-  CartLine({required this.item, this.quantity = 1, this.type = 'retail'});
-
-  double get lineTotal {
-    if (type == 'wholesale' &&
-        item.isWholesaleAvailable &&
-        item.wholesalePrice != null) {
-      return item.wholesalePrice! * quantity;
-    }
-    return item.retailPrice * quantity;
-  }
-}
+import '../models/service_type.dart';
 
 class CartProvider extends ChangeNotifier {
-  final List<CartLine> _lines = [];
-  double _discount = 0.0;
-  PaymentMethod? _selectedPaymentMethod;
+  final List<CartItem> _items = [];
+  String? _customerName;
+  String? _tableNumber;
+  String? _seatNumber;
+  ServiceType? _serviceType;
+  String? _existingReceiptNo; // For adding items to existing orders
+  int _existingItemsCount = 0; // Track how many items are from existing order
 
-  List<CartLine> get lines => List.unmodifiable(_lines);
-  double get subtotal => _lines.fold(0.0, (sum, l) => sum + l.lineTotal);
-  double get discount => _discount;
-  double get grandTotal => subtotal - discount;
-  PaymentMethod? get selectedPaymentMethod => _selectedPaymentMethod;
+  List<CartItem> get items => List.unmodifiable(_items);
+  String? get customerName => _customerName;
+  String? get tableNumber => _tableNumber;
+  String? get seatNumber => _seatNumber;
+  ServiceType? get serviceType => _serviceType;
+  String? get existingReceiptNo => _existingReceiptNo;
+  int get existingItemsCount => _existingItemsCount;
 
-  void add(FoodItem item, {String type = 'retail'}) {
-    final existing = _lines
-        .where((l) => l.item.id == item.id && l.type == type)
-        .toList();
-    if (existing.isNotEmpty) {
-      existing.first.quantity += 1;
-    } else {
-      _lines.add(CartLine(item: item, type: type));
-    }
-    notifyListeners();
-  }
-
-  void remove(FoodItem item, {String type = 'retail'}) {
-    final initialLength = _lines.length;
-    _lines.removeWhere((l) => l.item.id == item.id && l.type == type);
-
-    // Only notify listeners if something was actually removed
-    if (_lines.length != initialLength) {
-      notifyListeners();
+  // Get only new items (items added after existing items)
+  List<CartItem> get newItems =>
+      _existingItemsCount > 0 && _items.length > _existingItemsCount
+      ? _items.sublist(_existingItemsCount)
+      : (_existingItemsCount == 0 ? _items : []);
+  int get itemCount {
+    try {
+      return _items.fold(0, (sum, item) => sum + item.quantity);
+    } catch (e) {
+      debugPrint('Error calculating item count: $e');
+      return 0;
     }
   }
 
-  void updateQuantity(
-    FoodItem item,
-    int newQuantity, {
-    String type = 'retail',
+  double get subtotal {
+    try {
+      return _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+    } catch (e) {
+      debugPrint('Error calculating subtotal: $e');
+      return 0.0;
+    }
+  }
+
+  double get tax => 0.0; // No tax
+  double get serviceCharge => 0.0; // No service charge
+  double get total =>
+      subtotal; // Total is just the subtotal without service charge
+  bool get isEmpty => _items.isEmpty;
+
+  void addItem(
+    FoodItem foodItem, {
+    int quantity = 1,
+    String? specialInstructions,
+    bool isExisting =
+        false, // Mark if this is a previously confirmed order (read-only)
   }) {
-    try {
-      final line = _lines.firstWhere(
-        (l) => l.item.id == item.id && l.type == type,
-      );
+    if (quantity <= 0) return;
 
-      if (newQuantity <= 0) {
-        remove(item, type: type);
-      } else {
-        line.quantity = newQuantity;
-        notifyListeners();
-      }
-    } catch (e) {
-      // If item not found and quantity > 0, add it to cart
-      if (newQuantity > 0) {
-        add(item, type: type);
-        // Set the quantity after adding
-        final line = _lines.firstWhere(
-          (l) => l.item.id == item.id && l.type == type,
-        );
-        line.quantity = newQuantity;
-        notifyListeners();
-      }
-    }
-  }
-
-  void incrementQuantity(FoodItem item, {String type = 'retail'}) {
     try {
-      final line = _lines.firstWhere(
-        (l) => l.item.id == item.id && l.type == type,
+      // ALWAYS ADD AS NEW ITEM - NEVER COMBINE
+      // Each order should be a separate row in the database
+      // This allows tracking individual orders separately and preserves order history
+      _items.add(
+        CartItem(
+          foodItem: foodItem,
+          quantity: quantity,
+          specialInstructions: specialInstructions,
+          isExisting: isExisting, // Set the read-only flag
+        ),
       );
-      line.quantity++;
       notifyListeners();
     } catch (e) {
-      // If item not found, add it to cart
-      add(item, type: type);
+      debugPrint('Error adding item to cart: $e');
     }
   }
 
-  void decrementQuantity(FoodItem item, {String type = 'retail'}) {
+  void removeItem(FoodItem foodItem) {
+    // Only remove non-existing items (new items that can be deleted)
+    // Existing items are locked and shouldn't be removed
+    _items.removeWhere(
+      (item) => item.foodItem.id == foodItem.id && !item.isExisting,
+    );
+    notifyListeners();
+  }
+
+  void removeItemByIndex(int index) {
+    if (index >= 0 && index < _items.length) {
+      _items.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void updateQuantity(FoodItem foodItem, int quantity) {
     try {
-      final line = _lines.firstWhere(
-        (l) => l.item.id == item.id && l.type == type,
+      if (quantity <= 0) {
+        removeItem(foodItem);
+        return;
+      }
+
+      // Only update non-existing items (new items that can be edited)
+      // Existing items are locked and shouldn't be modified
+      final existingIndex = _items.indexWhere(
+        (item) => item.foodItem.id == foodItem.id && !item.isExisting,
       );
 
-      if (line.quantity > 1) {
-        line.quantity--;
+      if (existingIndex >= 0) {
+        _items[existingIndex] = _items[existingIndex].copyWith(
+          quantity: quantity,
+        );
         notifyListeners();
       } else {
-        remove(item, type: type);
+        debugPrint('Cannot update quantity: item is locked or not found');
       }
     } catch (e) {
-      // If item not found, do nothing
-      print('Item not found in cart: ${e.toString()}');
+      debugPrint('Error updating quantity: $e');
     }
   }
 
-  void clear() {
-    _lines.clear();
-    _discount = 0.0;
-    _selectedPaymentMethod = null;
+  void clearCart() {
+    _items.clear();
+    _customerName = null;
+    _tableNumber = null;
+    _seatNumber = null;
+    _serviceType = null;
+    _existingReceiptNo = null;
+    _existingItemsCount = 0;
     notifyListeners();
   }
 
-  void applyDiscount(double value) {
-    _discount = value;
+  void setExistingReceiptNo(String? receiptNo) {
+    _existingReceiptNo = receiptNo;
     notifyListeners();
   }
 
-  void setPaymentMethod(PaymentMethod paymentMethod) {
-    _selectedPaymentMethod = paymentMethod;
+  void setExistingItemsCount(int count) {
+    _existingItemsCount = count;
     notifyListeners();
   }
 
-  void clearPaymentMethod() {
-    _selectedPaymentMethod = null;
+  void setCustomerInfo({
+    String? name,
+    String? tableNumber,
+    String? seatNumber,
+  }) {
+    _customerName = name;
+    _tableNumber = tableNumber;
+    _seatNumber = seatNumber;
     notifyListeners();
   }
 
-  bool get hasValidPayment =>
-      _selectedPaymentMethod != null && _selectedPaymentMethod!.isValid;
+  void setServiceType(ServiceType? serviceType) {
+    _serviceType = serviceType;
+    notifyListeners();
+  }
 
-  List<OrderItem> toOrderItems() {
-    return _lines
-        .map(
-          (l) => OrderItem(
-            foodItemId: l.item.id,
-            quantity: l.quantity,
-            type: l.type,
-          ),
-        )
-        .toList();
+  bool get canCreateOrder =>
+      !isEmpty &&
+      _tableNumber != null &&
+      _tableNumber!.isNotEmpty &&
+      _seatNumber != null &&
+      _seatNumber!.isNotEmpty;
+
+  int getItemQuantity(FoodItem foodItem) {
+    try {
+      // Only count non-existing items (new items that can be edited)
+      // Existing items are locked and shouldn't show quantity controls
+      final item = _items.firstWhere(
+        (item) => item.foodItem.id == foodItem.id && !item.isExisting,
+      );
+      return item.quantity;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  bool isItemInCart(FoodItem foodItem) {
+    // Only check non-existing items (new items that can be edited)
+    // Existing items are locked and shouldn't prevent adding new rows
+    return _items.any(
+      (item) => item.foodItem.id == foodItem.id && !item.isExisting,
+    );
   }
 }

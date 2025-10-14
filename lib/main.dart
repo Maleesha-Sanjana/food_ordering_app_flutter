@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/landing_page.dart';
-import 'pages/customer_dashboard.dart';
-import 'pages/seller_dashboard.dart';
-import 'pages/admin_dashboard.dart';
+import 'pages/waiter_dashboard.dart';
 import 'providers/auth_provider.dart';
-import 'providers/catalog_provider.dart';
+import 'providers/menu_provider.dart';
 import 'providers/cart_provider.dart';
-import 'providers/orders_provider.dart';
+import 'providers/database_data_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,16 +19,12 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => CatalogProvider()),
+        ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(
-          create: (_) => OrdersProvider()
-            ..attachHubHandlers()
-            ..initializeMockOrders(),
-        ),
+        ChangeNotifierProvider(create: (_) => DatabaseDataProvider()),
       ],
       child: MaterialApp(
-        title: 'Food Ordering',
+        title: 'Waiter Order Pad',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -80,9 +74,7 @@ class MyApp extends StatelessWidget {
         ),
         routes: {
           '/': (_) => const LandingPage(),
-          '/customer': (_) => const CustomerDashboard(),
-          '/seller': (_) => const SellerDashboard(),
-          '/admin': (_) => const AdminDashboard(),
+          '/waiter': (_) => const WaiterDashboard(),
         },
       ),
     );
