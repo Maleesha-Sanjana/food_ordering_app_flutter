@@ -9,8 +9,11 @@ import '../models/salesman.dart';
 import '../models/suspend_order.dart';
 
 class ApiService {
-  // ✅ FOR iOS SIMULATOR (testing on Mac's simulator)
-  static const String baseUrl = 'http://localhost:3000/api';
+  // ✅ FOR Android SIMULATOR
+  static const String baseUrl = 'http://10.0.2.2:3000/api';
+
+  // ✅ FOR iOS SIMULATOR
+  //static const String baseUrl = 'http://localhost:3000/api';
 
   // ❌ FOR PHYSICAL DEVICE (iPhone/iPad via WiFi or USB)
   // static const String baseUrl = 'http://192.168.1.12:3000/api';
