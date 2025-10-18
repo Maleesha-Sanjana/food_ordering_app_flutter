@@ -66,31 +66,33 @@ class _WaiterDashboardState extends State<WaiterDashboard> {
       floatingActionButton: cart.isEmpty || cart.serviceType == null
           ? null
           : Container(
-              margin: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(20),
               child: FloatingActionButton.extended(
                 onPressed: () => _showFullscreenTable(context, cart, theme),
                 backgroundColor: theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
-                elevation: 8,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                icon: const Icon(Icons.check_rounded),
+                icon: const Icon(Icons.check_rounded, size: 22),
                 label: const Text(
                   'Confirm Order',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              theme.colorScheme.primary.withOpacity(0.05),
               theme.colorScheme.surface,
-              theme.colorScheme.secondary.withOpacity(0.05),
+              theme.colorScheme.surfaceContainerHighest,
             ],
           ),
         ),
@@ -111,41 +113,78 @@ class _WaiterDashboardState extends State<WaiterDashboard> {
 
               // Menu/Orders Toggle (show for all service types)
               if (cart.serviceType != null)
-                MenuToggleWidget(
-                  isMenuMode: _isMenuMode,
-                  onToggle: (isMenu) {
-                    setState(() => _isMenuMode = isMenu);
-                    // Auto-refresh unpaid orders when switching to unpaid view
-                    if (!isMenu) {
-                      final databaseData = context.read<DatabaseDataProvider>();
-                      databaseData.loadSuspendOrders();
-                      print('🔄 Auto-refreshing unpaid orders on toggle');
-                    }
-                  },
-                  serviceTypeName: _getServiceTypeName(cart.serviceType?.name),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: MenuToggleWidget(
+                    isMenuMode: _isMenuMode,
+                    onToggle: (isMenu) {
+                      setState(() => _isMenuMode = isMenu);
+                      // Auto-refresh unpaid orders when switching to unpaid view
+                      if (!isMenu) {
+                        final databaseData = context
+                            .read<DatabaseDataProvider>();
+                        databaseData.loadSuspendOrders();
+                        print('🔄 Auto-refreshing unpaid orders on toggle');
+                      }
+                    },
+                    serviceTypeName: _getServiceTypeName(
+                      cart.serviceType?.name,
+                    ),
+                  ),
                 ),
 
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
 
               // Search Bar (show in menu mode)
-              if (_isMenuMode) const SearchBarWidget(),
+              if (_isMenuMode)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const SearchBarWidget(),
+                ),
 
-              const SizedBox(height: 2),
+              const SizedBox(height: 8),
 
               // Breadcrumb (show in menu mode)
-              if (_isMenuMode) const BreadcrumbWidget(),
+              if (_isMenuMode)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const BreadcrumbWidget(),
+                ),
 
-              const SizedBox(height: 2),
+              const SizedBox(height: 12),
 
               // Content Section
               Expanded(
-                child: _isMenuMode
-                    ? const ContentWidget()
-                    : cart.serviceType?.name == 'roomService'
-                    ? const RoomServiceViewWidget()
-                    : cart.serviceType?.name == 'takeaway'
-                    ? const TakeawayViewWidget()
-                    : const OrdersViewWidget(),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, -8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    child: _isMenuMode
+                        ? const ContentWidget()
+                        : cart.serviceType?.name == 'roomService'
+                        ? const RoomServiceViewWidget()
+                        : cart.serviceType?.name == 'takeaway'
+                        ? const TakeawayViewWidget()
+                        : const OrdersViewWidget(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1158,7 +1197,10 @@ class _WaiterDashboardState extends State<WaiterDashboard> {
                           children: [
                             Icon(Icons.warning_rounded, color: Colors.white),
                             const SizedBox(width: 8),
-                            const Text('Service type selection is required!'),
+                            const Text(
+                              'Service type selection is required!',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ],
                         ),
                         backgroundColor: Colors.red,
@@ -1201,6 +1243,7 @@ class _WaiterDashboardState extends State<WaiterDashboard> {
                                 Expanded(
                                   child: Text(
                                     'Room ${selectedRoomData['RoomCode']} is occupied with an unpaid order! Please select a different room.',
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
                               ],
@@ -1247,6 +1290,7 @@ class _WaiterDashboardState extends State<WaiterDashboard> {
                                 Expanded(
                                   child: Text(
                                     'Table ${selectedTableData['TableCode']} is occupied with an unpaid order! Please select a different table.',
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
                               ],

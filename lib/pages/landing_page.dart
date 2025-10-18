@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -139,18 +140,18 @@ class _LandingPageState extends State<LandingPage>
                 end: Alignment.bottomRight,
                 colors: [
                   Color.lerp(
-                    const Color(0xFF6750A4), // Primary purple
-                    const Color(0xFF4CAF50), // Green
+                    const Color(0xFF6366F1), // Indigo
+                    const Color(0xFF8B5CF6), // Violet
                     _gradientAnimation.value,
                   )!,
                   Color.lerp(
-                    const Color(0xFF2196F3), // Blue
-                    const Color(0xFFFF9800), // Orange
+                    const Color(0xFF06B6D4), // Cyan
+                    const Color(0xFF10B981), // Emerald
                     _gradientAnimation.value,
                   )!,
                   Color.lerp(
-                    const Color(0xFFE91E63), // Pink
-                    const Color(0xFF9C27B0), // Purple
+                    const Color(0xFFF59E0B), // Amber
+                    const Color(0xFFEF4444), // Red
                     _gradientAnimation.value,
                   )!,
                 ],
@@ -175,133 +176,313 @@ class _LandingPageState extends State<LandingPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const SizedBox(height: 40),
-                          // Logo and Title
+                          const SizedBox(height: 60),
+                          // Logo and Title Section
                           Column(
                             children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.3),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
+                              // Animated Logo Container
+                              AnimatedBuilder(
+                                animation: _gradientAnimation,
+                                builder: (context, child) {
+                                  return Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.white.withOpacity(0.2),
+                                          Colors.white.withOpacity(0.1),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(30),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 30,
+                                          offset: const Offset(0, 15),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.white.withOpacity(0.1),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, -5),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.restaurant,
-                                  size: 40,
-                                  color: theme.colorScheme.onPrimary,
-                                ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.restaurant_menu_rounded,
+                                        size: 50,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 32),
+                              // Title with better typography
                               Text(
                                 'Waiter Order Pad',
-                                style: theme.textTheme.headlineLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.bold,
+                                style: theme.textTheme.displaySmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               Text(
-                                'Enter your password to access the waiter order pad',
+                                'Streamline your restaurant operations with our modern order management system',
                                 style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 48),
-                          // Auth Form
-                          Card(
-                            elevation: 8,
-                            shadowColor: theme.colorScheme.primary.withOpacity(
-                              0.2,
+                          const SizedBox(height: 60),
+                          // Glassmorphism Auth Form
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.white.withOpacity(0.05),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(32),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 40,
+                                  offset: const Offset(0, 20),
+                                ),
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, -10),
+                                ),
+                              ],
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    // Password Field
-                                    TextFormField(
-                                      controller: passwordController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Password',
-                                        hintText: 'Enter your password',
-                                        prefixIcon: const Icon(Icons.lock),
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscurePassword
-                                                ? Icons.visibility
-                                                : Icons.visibility_off,
-                                          ),
-                                          onPressed: () => setState(
-                                            () => _obscurePassword =
-                                                !_obscurePassword,
-                                          ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(40),
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Welcome Text
+                                        Text(
+                                          'Welcome Back',
+                                          style: theme.textTheme.headlineMedium
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                      ),
-                                      obscureText: _obscurePassword,
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your password';
-                                        }
-                                        if (value.length < 4) {
-                                          return 'Password must be at least 4 characters';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(height: 24),
-                                    // Submit Button
-                                    SizedBox(
-                                      height: 56,
-                                      child: ElevatedButton(
-                                        onPressed: auth.isLoading
-                                            ? null
-                                            : _handleSubmit,
-                                        child: auth.isLoading
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                        Color
-                                                      >(Colors.white),
-                                                ),
-                                              )
-                                            : const Text(
-                                                'Sign In',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Enter your credentials to continue',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                color: Colors.white.withOpacity(
+                                                  0.8,
                                                 ),
                                               ),
-                                      ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 32),
+                                        // Password Field with modern styling
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(
+                                              0.9,
+                                            ), // More opaque for better contrast
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(
+                                                0xFFE2E8F0,
+                                              ), // Light border for visibility
+                                            ),
+                                          ),
+                                          child: TextFormField(
+                                            controller: passwordController,
+                                            style: const TextStyle(
+                                              color: Color(
+                                                0xFF1E293B,
+                                              ), // Dark text for visibility
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            decoration: InputDecoration(
+                                              labelText: 'Password',
+                                              hintText: 'Enter your password',
+                                              hintStyle: const TextStyle(
+                                                color: Color(
+                                                  0xFF64748B,
+                                                ), // Dark gray for visibility
+                                                fontSize: 16,
+                                              ),
+                                              labelStyle: const TextStyle(
+                                                color: Color(
+                                                  0xFF475569,
+                                                ), // Darker gray for visibility
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              prefixIcon: Icon(
+                                                Icons.lock_outline_rounded,
+                                                color: const Color(
+                                                  0xFF6366F1,
+                                                ), // Primary color for visibility
+                                                size: 22,
+                                              ),
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons
+                                                            .visibility_outlined
+                                                      : Icons
+                                                            .visibility_off_outlined,
+                                                  color: const Color(
+                                                    0xFF64748B,
+                                                  ), // Dark gray for visibility
+                                                  size: 22,
+                                                ),
+                                                onPressed: () => setState(
+                                                  () => _obscurePassword =
+                                                      !_obscurePassword,
+                                                ),
+                                              ),
+                                              border: InputBorder.none,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                    vertical: 20,
+                                                  ),
+                                            ),
+                                            obscureText: _obscurePassword,
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
+                                                return 'Please enter your password';
+                                              }
+                                              if (value.length < 4) {
+                                                return 'Password must be at least 4 characters';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(height: 32),
+                                        // Submit Button with modern styling
+                                        Container(
+                                          height: 60,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Colors.white,
+                                                Colors.white.withOpacity(0.9),
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.1,
+                                                ),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ElevatedButton(
+                                            onPressed: auth.isLoading
+                                                ? null
+                                                : _handleSubmit,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              shadowColor: Colors.transparent,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                            ),
+                                            child: auth.isLoading
+                                                ? const SizedBox(
+                                                    width: 24,
+                                                    height: 24,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2.5,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(Color(0xFF6366F1)),
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    'Sign In',
+                                                    style: theme
+                                                        .textTheme
+                                                        .titleMedium
+                                                        ?.copyWith(
+                                                          color: const Color(
+                                                            0xFF6366F1,
+                                                          ),
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                  ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 40),
+                          // Footer with additional info
+                          Text(
+                            'Secure • Fast • Reliable',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1.0,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ],
                       ),
                     ),

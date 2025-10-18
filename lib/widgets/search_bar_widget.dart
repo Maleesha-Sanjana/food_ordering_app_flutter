@@ -24,27 +24,30 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
     final menu = context.watch<MenuProvider>();
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+      margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
       child: TextField(
         controller: _searchController,
-        style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontSize: 13,
+          color: theme.colorScheme.onSurface, // Explicit text color for visibility
+        ),
         decoration: InputDecoration(
           hintText: 'Search...',
           hintStyle: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 13,
-            color: theme.colorScheme.outline.withOpacity(0.7),
+            color: theme.colorScheme.onSurfaceVariant, // Better contrast for hint text
           ),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: theme.colorScheme.primary,
-            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+            size: 20,
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 20,
                   ),
                   onPressed: () {
                     _searchController.clear();
@@ -58,24 +61,24 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 )
               : null,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: theme.colorScheme.surfaceContainerHighest,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.2),
+              color: theme.colorScheme.outline.withOpacity(0.1),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
+            horizontal: 16,
+            vertical: 12,
           ),
           isDense: true,
         ),

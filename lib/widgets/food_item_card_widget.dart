@@ -6,10 +6,7 @@ import '../models/food_item.dart';
 class FoodItemCardWidget extends StatelessWidget {
   final FoodItem foodItem;
 
-  const FoodItemCardWidget({
-    super.key,
-    required this.foodItem,
-  });
+  const FoodItemCardWidget({super.key, required this.foodItem});
 
   @override
   Widget build(BuildContext context) {
@@ -19,47 +16,59 @@ class FoodItemCardWidget extends StatelessWidget {
     final quantity = cart.getItemQuantity(foodItem);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.06),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.01),
+            blurRadius: 40,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                // Food Icon
+                // Food Icon with modern styling
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        theme.colorScheme.primary.withOpacity(0.1),
-                        theme.colorScheme.primary.withOpacity(0.05),
+                        theme.colorScheme.primary.withOpacity(0.12),
+                        theme.colorScheme.secondary.withOpacity(0.08),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                    ),
                   ),
                   child: Icon(
                     _getFoodIcon(foodItem.name),
                     color: theme.colorScheme.primary,
-                    size: 32,
+                    size: 36,
                   ),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 20),
                 // Food Details
                 Expanded(
                   child: Column(
@@ -68,38 +77,48 @@ class FoodItemCardWidget extends StatelessWidget {
                     children: [
                       Text(
                         foodItem.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                           color: theme.colorScheme.onSurface,
-                          fontSize: 18,
+                          letterSpacing: -0.2,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Availability Status
+                      _buildAvailabilityChip(
+                        'Available',
+                        foodItem.isAvailable,
+                        theme,
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             // Price and Actions Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Price Section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Price',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Rs.${foodItem.price.toStringAsFixed(0)}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
                         color: theme.colorScheme.primary,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ],
@@ -108,8 +127,11 @@ class FoodItemCardWidget extends StatelessWidget {
                 if (isInCart)
                   Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      color: theme.colorScheme.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.15),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -120,20 +142,22 @@ class FoodItemCardWidget extends StatelessWidget {
                           icon: Icon(
                             Icons.remove_rounded,
                             color: theme.colorScheme.error,
+                            size: 20,
                           ),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
+                            minimumSize: const Size(40, 40),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             '$quantity',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
                               color: theme.colorScheme.primary,
                             ),
                           ),
@@ -144,46 +168,68 @@ class FoodItemCardWidget extends StatelessWidget {
                           icon: Icon(
                             Icons.add_rounded,
                             color: theme.colorScheme.primary,
+                            size: 20,
                           ),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(14),
                             ),
+                            minimumSize: const Size(40, 40),
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  ElevatedButton.icon(
-                    onPressed: () => cart.addItem(foodItem),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Add to Table'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary,
+                        ],
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => cart.addItem(foodItem),
+                      icon: const Icon(
+                        Icons.add_rounded, 
+                        size: 20,
+                        color: Colors.white,
                       ),
-                      elevation: 0,
+                      label: const Text(
+                        'Add to Order',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Availability Status
-            Row(
-              children: [
-                _buildAvailabilityChip(
-                  'Available',
-                  foodItem.isAvailable,
-                  theme,
-                ),
               ],
             ),
           ],
@@ -198,24 +244,16 @@ class FoodItemCardWidget extends StatelessWidget {
     ThemeData theme,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isAvailable
-              ? [
-                  theme.colorScheme.primary.withOpacity(0.1),
-                  theme.colorScheme.primary.withOpacity(0.05),
-                ]
-              : [
-                  theme.colorScheme.outline.withOpacity(0.1),
-                  theme.colorScheme.outline.withOpacity(0.05),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: isAvailable
+            ? const Color(0xFF10B981).withOpacity(0.1) // Emerald 500
+            : theme.colorScheme.outline.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isAvailable
-              ? theme.colorScheme.primary.withOpacity(0.3)
-              : theme.colorScheme.outline.withOpacity(0.3),
+              ? const Color(0xFF10B981).withOpacity(0.2) // Emerald 500
+              : theme.colorScheme.outline.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -223,23 +261,24 @@ class FoodItemCardWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 6,
+            height: 6,
             decoration: BoxDecoration(
               color: isAvailable
-                  ? theme.colorScheme.primary
+                  ? const Color(0xFF10B981) // Emerald 500
                   : theme.colorScheme.outline,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: isAvailable
-                  ? theme.colorScheme.primary
+                  ? const Color(0xFF10B981) // Emerald 500
                   : theme.colorScheme.outline,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
             ),
           ),
         ],
