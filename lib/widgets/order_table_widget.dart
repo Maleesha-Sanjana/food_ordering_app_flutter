@@ -50,33 +50,33 @@ class OrderTableWidget extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Service Type Button and Clear All Button
+                // Customer Selection Button and Clear All Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Service Type Selection Button
+                    // Customer Selection Button (using mock data)
                     TextButton.icon(
                       onPressed: onShowServiceTypeDialog,
                       icon: Icon(
-                        cart.serviceType != null
-                            ? Icons.restaurant_rounded
+                        cart.customerName != null
+                            ? Icons.person_rounded
                             : Icons.warning_rounded,
                         size: 18,
-                        color: cart.serviceType != null
+                        color: cart.customerName != null
                             ? theme.colorScheme.primary
                             : Colors.orange,
                       ),
                       label: Text(
-                        cart.serviceType?.displayName ?? 'Select Service Type',
+                        cart.customerName ?? 'Select Customer',
                         style: TextStyle(
-                          color: cart.serviceType != null
+                          color: cart.customerName != null
                               ? theme.colorScheme.primary
                               : Colors.orange,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       style: TextButton.styleFrom(
-                        backgroundColor: cart.serviceType != null
+                        backgroundColor: cart.customerName != null
                             ? theme.colorScheme.primary.withOpacity(0.1)
                             : Colors.orange.withOpacity(0.1),
                         shape: RoundedRectangleBorder(
@@ -165,32 +165,32 @@ class OrderTableWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                cart.serviceType == null
+                cart.customerName == null
                     ? Icons.warning_rounded
                     : Icons.shopping_cart_outlined,
                 size: 48,
-                color: cart.serviceType == null
+                color: cart.customerName == null
                     ? Colors.orange.withOpacity(0.7)
                     : theme.colorScheme.outline.withOpacity(0.5),
               ),
               const SizedBox(height: 16),
               Text(
-                cart.serviceType == null
-                    ? 'Please select a service type first'
+                cart.customerName == null
+                    ? 'Please select a customer first'
                     : 'No items added yet',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: cart.serviceType == null
+                  color: cart.customerName == null
                       ? Colors.orange.withOpacity(0.8)
                       : theme.colorScheme.outline.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                cart.serviceType == null
-                    ? 'Click "Select Service Type" above to continue'
+                cart.customerName == null
+                    ? 'Click "Select Customer" above to continue'
                     : 'Add items from the menu below',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cart.serviceType == null
+                  color: cart.customerName == null
                       ? Colors.orange.withOpacity(0.6)
                       : theme.colorScheme.outline.withOpacity(0.5),
                 ),

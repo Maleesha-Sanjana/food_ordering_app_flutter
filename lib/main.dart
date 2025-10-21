@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/landing_page.dart';
-import 'pages/waiter_dashboard.dart';
+import 'pages/sales_order_dashboard.dart';
 import 'providers/auth_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/cart_provider.dart';
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
       ],
 
       child: MaterialApp(
-        title: 'Waiter Order Pad',
+        title: 'Sales Order',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -231,7 +231,7 @@ class MyApp extends StatelessWidget {
         ),
         routes: {
           '/': (_) => const LandingPage(),
-          '/waiter': (_) => const WaiterDashboard(),
+          '/waiter': (_) => const SalesOrderDashboard(),
         },
       ),
     );

@@ -216,7 +216,7 @@ class _LandingPageState extends State<LandingPage>
                                     ),
                                     child: Center(
                                       child: Icon(
-                                        Icons.restaurant_menu_rounded,
+                                        Icons.inventory_2_rounded,
                                         size: 50,
                                         color: Colors.white,
                                       ),
@@ -227,7 +227,7 @@ class _LandingPageState extends State<LandingPage>
                               const SizedBox(height: 32),
                               // Title with better typography
                               Text(
-                                'Waiter Order Pad',
+                                'Sales Order',
                                 style: theme.textTheme.displaySmall?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w800,
@@ -237,7 +237,7 @@ class _LandingPageState extends State<LandingPage>
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Streamline your restaurant operations with our modern order management system',
+                                'Record customer orders for plastic items quickly while visiting customers',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: Colors.white.withOpacity(0.9),
                                   fontWeight: FontWeight.w400,

@@ -71,26 +71,34 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔐 Attempting password-only login');
+      print('🔐 Attempting password-only login (mock)');
 
-      // Authenticate with API using password only
-      final response = await ApiService.authenticateWithPassword(password);
-
-      if (response['success'] == true) {
-        _currentSalesman = Salesman.fromJson(response['salesman']);
-        _isAuthenticated = true;
-        _errorMessage = null;
-
-        print('✅ Password login successful: ${_currentSalesman!.displayName}');
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response['message'] ?? 'Invalid password';
+      // Offline mock login: accept only specific credentials
+      if (password != 'test123') {
+        _errorMessage = 'Invalid mock credentials';
         _isAuthenticated = false;
-        print('❌ Password login failed: ${_errorMessage}');
         notifyListeners();
         return false;
       }
+
+      _currentSalesman = Salesman(
+        idx: 1,
+        salesmanCode: 'ML001',
+        salesmanName: 'Maleesha',
+        salesmanTitle: 'Sales Representative',
+        salesmanType: 'sales',
+        companyCode: 'COMP',
+        locationDescription: 'Mock Company',
+        mobile: '+94 71 000 0000',
+        email: 'maleesha@sales.local',
+        address1: '123 Mock Street',
+      );
+      _isAuthenticated = true;
+      _errorMessage = null;
+
+      print('✅ Mock login successful: ${_currentSalesman!.displayName}');
+      notifyListeners();
+      return true;
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}';
       _isAuthenticated = false;
