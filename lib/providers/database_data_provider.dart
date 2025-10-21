@@ -30,6 +30,9 @@ class DatabaseDataProvider extends ChangeNotifier {
   // Error states
   String? _errorMessage;
 
+  // Mock load guard
+  bool _mockLoaded = false;
+
   // Getters
   List<FoodItem> get menuItems => _menuItems;
   List<Department> get departments => _departments;
@@ -49,6 +52,50 @@ class DatabaseDataProvider extends ChangeNotifier {
 
   bool get hasError => _errorMessage != null;
 
+  /// Load mock data (no API calls)
+  Future<void> loadMockData() async {
+    if (_mockLoaded) return; // Already loaded
+    _isLoadingMenuItems = true;
+    _isLoadingDepartments = true;
+    _isLoadingUsers = false;
+    _isLoadingOrders = false;
+    _isLoadingSuspendOrders = false;
+    _errorMessage = null;
+    notifyListeners();
+
+    // Removed artificial delay for faster startup
+
+    _departments = [
+      Department(departmentCode: 'PL', departmentName: 'Plastics', standardEAN: 1),
+    ];
+
+    _subDepartments = [
+      SubDepartment(
+        subDepartmentCode: 'PL-HH',
+        subDepartmentName: 'Household',
+        departmentCode: 'PL',
+        standardEAN: 101,
+      ),
+      SubDepartment(
+        subDepartmentCode: 'PL-IN',
+        subDepartmentName: 'Industrial',
+        departmentCode: 'PL',
+        standardEAN: 102,
+      ),
+    ];
+
+    _menuItems = [
+      FoodItem(idx: 1, productCode: 'PLB01', productName: 'Plastic Bucket 20L', unitPrice: 1500.0, departmentCode: 'PL', subDepartmentCode: 'PL-HH'),
+      FoodItem(idx: 2, productCode: 'PLB02', productName: 'Plastic Basin 15L', unitPrice: 900.0, departmentCode: 'PL', subDepartmentCode: 'PL-HH'),
+      FoodItem(idx: 3, productCode: 'PLC01', productName: 'Crate 50kg', unitPrice: 3200.0, departmentCode: 'PL', subDepartmentCode: 'PL-IN'),
+      FoodItem(idx: 4, productCode: 'PLC02', productName: 'Storage Box 40L', unitPrice: 2800.0, departmentCode: 'PL', subDepartmentCode: 'PL-IN'),
+    ];
+
+    _isLoadingMenuItems = false;
+    _isLoadingDepartments = false;
+    _mockLoaded = true;
+    notifyListeners();
+  }
 
   /// Load all menu items from database
   Future<void> loadMenuItems() async {
@@ -369,8 +416,8 @@ class DatabaseDataProvider extends ChangeNotifier {
 
   /// Refresh all data
   Future<void> refreshAllData() async {
-    print('🔄 Refreshing all data from database...');
-    await loadAllData();
+    print('🔄 Refreshing all data (mock)...');
+    await loadMockData();
   }
 
   /// Get menu items by department
