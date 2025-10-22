@@ -18,8 +18,126 @@ class SalesOrderDashboard extends StatefulWidget {
   State<SalesOrderDashboard> createState() => _SalesOrderDashboardState();
 }
 
+class _DashboardHome extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final database = context.watch<DatabaseDataProvider>();
+
+    final items = database.menuItems; // mock products
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'What would you like to order?',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Search bar + filter
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                const Icon(Icons.search_rounded, color: Color(0xFFEF4444)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Find a product or customer',
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.tune_rounded, color: Color(0xFFEF4444)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Popular Items', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          ListView.separated(
+            itemCount: items.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, i) {
+              final item = items[i];
+              return InkWell(
+                onTap: () {},
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.shopping_bag_rounded, color: Color(0xFFEF4444)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.productCode,
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Rs.${item.price.toStringAsFixed(0)}',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFFEF4444)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SalesOrderDashboardState extends State<SalesOrderDashboard> {
   bool _isMenuMode = true;
+  int _tabIndex = 1; // 0 = Dashboard, 1 = Cart (default to Cart)
 
   @override
   void initState() {
@@ -74,59 +192,63 @@ class _SalesOrderDashboardState extends State<SalesOrderDashboard> {
           child: Column(
             children: [
               const HeaderWidget(),
-              OrderTableWidget(
-                onShowFullscreenTable: () => _showFullscreenTable(context, cart, theme),
-                onShowServiceTypeDialog: () => CustomerSelectDialog.show(context),
-              ),
-              const SizedBox(height: 8),
-              if (cart.customerName != null)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  child: MenuToggleWidget(
-                    isMenuMode: _isMenuMode,
-                    onToggle: (isMenu) => setState(() => _isMenuMode = isMenu),
-                    serviceTypeName: 'Sales Orders',
-                  ),
+              if (_tabIndex == 0)
+                Expanded(child: _DashboardHome())
+              else ...[
+                OrderTableWidget(
+                  onShowFullscreenTable: () => _showFullscreenTable(context, cart, theme),
+                  onShowServiceTypeDialog: () => CustomerSelectDialog.show(context),
                 ),
-              const SizedBox(height: 12),
-              if (_isMenuMode)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const SearchBarWidget(),
-                ),
-              const SizedBox(height: 8),
-              if (_isMenuMode)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const BreadcrumbWidget(),
-                ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                const SizedBox(height: 8),
+                if (cart.customerName != null)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: MenuToggleWidget(
+                      isMenuMode: _isMenuMode,
+                      onToggle: (isMenu) => setState(() => _isMenuMode = isMenu),
+                      serviceTypeName: 'Sales Orders',
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, -8),
+                  ),
+                const SizedBox(height: 12),
+                if (_isMenuMode)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const SearchBarWidget(),
+                  ),
+                const SizedBox(height: 8),
+                if (_isMenuMode)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const BreadcrumbWidget(),
+                  ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                       ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, -8),
+                        ),
+                      ],
                     ),
-                    child: _isMenuMode ? const ContentWidget() : const OrdersViewWidget(),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      child: _isMenuMode ? const ContentWidget() : const OrdersViewWidget(),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
